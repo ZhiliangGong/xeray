@@ -1,0 +1,12 @@
+ Beam-energy(keV) 10.000000
+    Density(g/mL) 1.020000
+Detector-foot(mm) 10.760000
+    Slit-size(mm) 0.024000
+ Chemical-formula H2OCa0.000018Cl0.000036
+
+               min       max       start     fix  plot
+   Qz-Offset   0.000000  0.000000  0.000000  1    0  
+Scale-Factor   95.500000  95.500000  95.500000  1    0  
+    Bulk(mM)   0.750000  1.000000  0.750000  0    0  
+Surf(1/nm^2)   1.100000  1.400000  1.100000  0    0  
+  Background  -2.400000 -1.300000 -1.300000  0    0  
