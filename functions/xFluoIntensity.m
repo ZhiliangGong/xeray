@@ -26,6 +26,6 @@ function I = xFluoIntensity(dispersion,absorption,wavelength,dispersion1,absorpt
     factor(~sel1) = 1 ./ sin(angle(~sel1));
     IS = scaleFactor .* T * surf .* factor .* slitSize / 6.0221413e2;
     
-    I = IB+IS+background;
+    I = IB + IS + background;
 
 end

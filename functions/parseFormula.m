@@ -1,34 +1,46 @@
-function [elements,nAtoms] = parseFormula(formula)
+function [elements,stoichiometry] = parseFormula(formula)
+% parse the formula to give the elements and stoichiometry numbers
 
-    n = 0;
-    elements = {};
-    nAtoms = {};
-    try
-        for i = 1:length(formula)
-            c = formula(i);
-            if c <= 'Z' &&  c >= 'A'
-                n = n+1;
-                elements{n} = c;
-                nAtoms{n} = '0';
-            elseif c <= 'z' &&  c >= 'a' && ((formula(i-1) <= 'Z' && formula(i-1) >= 'A') || (formula(i-1) <= 'z'&& formula(i-1) >= 'a'))
-                elements{n} = [elements{n},c];
-            elseif (c <= '9' &&  c >= '0') || c == '.'
-                nAtoms{n} = [nAtoms{n},c];
-            else
-                error('Invalid chemical formula.');
-            end
-        end
-    catch
-        error('Invalid chemical formula.');
+    % check errors in formula
+    if ~isempty(regexp(formula, '[^[A-Z, a-z, \., 0-9]', 'once'))
+        error('Formula contains illegal characters!');
+    elseif isempty(regexp(formula, '^[A-Z]', 'once'))
+        error('Formula should start with a capital letter!');
+    elseif ~isempty(regexp(formula, '\.[0-9]\.', 'once')) || ~isempty(regexp(formula, '\.[A-Z, a-z\', 'once'))
+        error('Check decimal point position!');
     end
     
+    % insert 1's when missing for stoichiometry
+    upperCase = (formula <= 'Z' & formula >= 'A');
+    lowerCase = (formula <= 'z' & formula >= 'a');
+    marker = ((upperCase | lowerCase) & [upperCase(2:end), true]);
+    location = false(1, length(marker) + sum(marker));
+    location(find(marker)+(1:length(find(marker)))) = true;
+    formula(~location) = formula;
+    formula(location) = '1';
+    
+    % assign logical arrays
+    if length(upperCase) < length(formula)
+        upperCase = (formula <= 'Z' & formula >= 'A');
+        lowerCase = (formula <= 'z' & formula >= 'a');
+    end
+    number = ((formula <= '9' & formula >= '0') | formula == '.');
+    n = sum(upperCase);
+    elements = cell(1,n);
+    stoichiometry = zeros(1,n);
+    
+    % obtain elements
+    start = find(upperCase);
+    finish = find((upperCase & ~[lowerCase(2:end),false]) | (lowerCase & ~[lowerCase(2:end),false]));
     for i = 1:n
-        nAtoms{i} = str2double(nAtoms{i});
-        if nAtoms{i} == 0
-            nAtoms{i} = 1;
-        end
+        elements{i} = formula(start(i):finish(i));
     end
     
-    nAtoms = cell2mat(nAtoms);
+    % obtain stoichiometry numbers
+    start = find(number & ~[true, number(1:end-1)]);
+    finish = find(number & ~[number(2:end), false]);
+    for i = 1:n
+        stoichiometry(i) = str2double(formula(start(i):finish(i)));
+    end
 
 end

@@ -7,8 +7,8 @@ function xresult = refracOf(formula,E,density)
     ELEMENTCHARGE = 1.60217646e-19;
     A = 6.02214199e23;
 
-    [elements,nAtoms] = parseFormula(formula);
-    mw = molecularWeightOf(elements,nAtoms);
+    [elements,stoichiometry] = parseFormula(formula);
+    mw = molecularWeight(elements,stoichiometry);
     
     f1 = zeros(size(elements));
     f2 = f1;
@@ -19,15 +19,15 @@ function xresult = refracOf(formula,E,density)
     wl = (c*h/ELEMENTCHARGE)/(E*1000);
     dispersion = 0;
     absorption = 0;
-    for i = 1:length(nAtoms)
-        dispersion = dispersion + wl.^2/(2*pi)*THOMPSON*A* density *1e6 / mw * nAtoms(i) * f1(i);
-        absorption = absorption + wl.^2/(2*pi)*THOMPSON*A* density *1e6 / mw * nAtoms(i) * f2(i);
+    for i = 1:length(stoichiometry)
+        dispersion = dispersion + wl.^2/(2*pi)*THOMPSON*A* density *1e6 / mw * stoichiometry(i) * f1(i);
+        absorption = absorption + wl.^2/(2*pi)*THOMPSON*A* density *1e6 / mw * stoichiometry(i) * f2(i);
     end
     
     xresult.E = E;
     xresult.wavelength = (c*h/ELEMENTCHARGE)./(E*1000.0)*1e10;
     xresult.mw = mw;
-    xresult.nAtoms = nAtoms;
+    xresult.stoichiometry = stoichiometry;
     xresult.density = density;
     xresult.f1 = f1;
     xresult.f2 = f2;
