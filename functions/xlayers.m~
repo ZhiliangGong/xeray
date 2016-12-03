@@ -31,10 +31,11 @@ classdef xlayers < handle
         % optics
         angle % an array, m x 1, in radian
         refracAngle % refraction angle, m x n
+        matrices
         transmission % complex amplitude
         reflection % complex amplitude
         penetration % depth in A
-        layerIntensity % relative to incoming beam intensity at the start of each layer
+        intensity % relative to incoming beam intensity at the start of each layer
         
         % fitting
         chosenElement
@@ -91,7 +92,6 @@ classdef xlayers < handle
             end
             
             sel = true(1, s.N);
-            s.N = s.N - 1;
             sel(n) = false;
             
             s.electronDensity = s.electronDensity(sel);
@@ -105,10 +105,8 @@ classdef xlayers < handle
             
         end
         
-        % update layer formula
+        % update layer formula, leading to changes in refraction index
         function updateFormula(s, n, element, newStoichiometryNumber)
-            % leading to changes in parsed formula, number of electrons,
-            % stoichiometry, and density
             
             for i = 1 : length(s.elements{n})
                 if strcmp(s.elements{n}{i}, element)
@@ -120,7 +118,6 @@ classdef xlayers < handle
                     end
                     s.formula{n} = newFormula;
                     s.parseFormula(n);
-                    s.getDensity(n);
                     break;
                 end
             end
@@ -128,26 +125,16 @@ classdef xlayers < handle
         end
         
         % calculate x-ray optical properties
-        function calculateRefractionIndex(s, energy, indices)
-            
-            s.energy = energy;
-            s.getWavelength;
-            
-            if nargin == 2
-                indices = 1 : s.N;
-            end
-            
-            
+        function calculateRefractionIndex(s, indices)
             
             for k = indices
                 if s.energy < 0.003
                     error('X-ray energy must be larger than 3 eV.');
+                end
+                if s.density(k)
+                    s.calculateDispersionAbsorption(k);
                 else
-                    if s.density(k)
-                        s.calculateDispersionAbsorption(k);
-                    else
-                        s.calculateDispersion(k);
-                    end
+                    s.calculateDispersion(k);
                 end
             end
             
@@ -182,13 +169,13 @@ classdef xlayers < handle
             m(:, :, 4) = ratio1 .* exp(expo1);
             
             tempmatrix = cell(s.M, s.N);
-            matrices = cell(s.M, s.N);
+            s.matrices = cell(s.M, s.N);
             for i = 1 : s.M
                 for j = s.N : -1 : 1
                     tempmatrix{i, j} = reshape(m(i, j, :), 2, 2)';
-                    matrices{i, j} = eye(2);
+                    s.matrices{i, j} = eye(2);
                     for k = j : s.N
-                        matrices{i, j} = matrices{i, j} * tempmatrix{i, k};
+                        s.matrices{i, j} = s.matrices{i, j} * tempmatrix{i, k};
                     end
                 end
             end
@@ -198,13 +185,13 @@ classdef xlayers < handle
             
             ramp(:, end) = 0;
             for i = 1 : s.M
-                tamp(i, end) = 1 / matrices{i, 1}(1, 1);
+                tamp(i, end) = 1 / s.matrices{i, 1}(1, 1);
             end
             
             for i = 1 : s.M
                 for j = 1 : s.N - 1
-                    tamp(i, j) = matrices{i, j+1}(1, 1) * tamp(i, end);
-                    ramp(i, j) = matrices{i, j+1}(2, 1) * tamp(i, end);
+                    tamp(i, j) = s.matrices{i, j+1}(1, 1) * tamp(i, end);
+                    ramp(i, j) = s.matrices{i, j+1}(2, 1) * tamp(i, end);
                 end
             end
             
@@ -220,16 +207,8 @@ classdef xlayers < handle
             s.penetration = s.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
             
             % intensity below each of the interface
-            z = repmat(cumsum([0, s.thickness]), s.M, 1);
-            attenuation = exp( - z(:,1:end-1) ./ [ones(s.M, 1), s.penetration(:, 1:end-1)]);
-            s.layerIntensity = abs((s.transmission + s.reflection).^2) .* attenuation;
-            
-            % integrated intensity for each layer
-            zdiff = z(:, 2:end) - z(:, 1:end-1);
-            integralFactor = s.penetration .* (exp(-z(:, 1:end-1) ./ s.penetration) - exp(-z(:, 2:end) ./ s.penetration));
-            infIndex = (s.penetration == Inf);
-            integralFactor(infIndex) = zdiff(infIndex);
-            s.layerIntensity = s.layerIntensity .* integralFactor;
+            attenuation = exp( - repmat(cumsum([0, s.thickness(1: end-1)]), s.M, 1) ./ [ones(s.M, 1), s.penetration(:, 1:end-1)]);
+            s.intensity = abs((s.transmission + s.reflection).^2) .* attenuation;
             
         end
         
@@ -250,7 +229,13 @@ classdef xlayers < handle
                 end
             end
             
-            s.fluoIntensity = sum(repmat(location, s.M, 1) .* s.layerIntensity, 2);
+            z = repmat(cumsum([0, s.thickness]), s.M, 1);
+            zdiff = z(:, 2:end) - z(:, 1:end-1);
+            integralFactor = s.penetration .* (exp(-z(:, 1:end-1) ./ s.penetration) - exp(-z(:, 2:end) ./ s.penetration));
+            infIndex = (s.penetration == Inf);
+            integralFactor(infIndex) = zdiff(infIndex);
+            layerIntensity = repmat(location, s.M, 1) .* s.intensity .* integralFactor;
+            s.fluoIntensity = sum(layerIntensity, 2);
             
         end
         
