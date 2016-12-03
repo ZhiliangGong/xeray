@@ -1,4 +1,4 @@
-classdef xlayers < handle
+classdef XeLayers < handle
     % tratified layer structure for x-ray fluorescence
     % this class holds the general information of each layer
     
@@ -8,37 +8,14 @@ classdef xlayers < handle
         N % number of layers
         M % number of incidence angles
         
-        % inputs
-        electronDensity
-        thickness
-        formula
-        
-        % dependent on the formula
-        elements
-        stoichiometry
-        molecularWeight
-        electronNumber
-        
-        % dependent on the formula and electron density
-        density
-        
-        % refraction properties
-        energy
-        wavelength
-        dispersion
-        absorption
-        
-        % optics
-        angle % an array, m x 1, in radian
-        refracAngle % refraction angle, m x n
-        transmission % complex amplitude
-        reflection % complex amplitude
-        penetration % depth in A
-        layerIntensity % relative to incoming beam intensity at the start of each layer
+        % system
+        composition
+        refraction
+        optics
         
         % fitting
-        chosenElement
-        fluoIntensity
+        data
+        fit
         
         % supporting database
         ElectronTable
@@ -50,7 +27,7 @@ classdef xlayers < handle
     methods
         
         % construct an instance, and load the supporting database
-        function s = xlayers
+        function s = XeLayers
             
             s.generateSupportDatabase;
             
@@ -68,13 +45,13 @@ classdef xlayers < handle
             end
             
             switch length(varargin)
-                case 2 % unkown formula, give the electron density and thickness
-                    s.electronDensity(n) = varargin{1};
-                    s.thickness(n) = varargin{2};
-                case 3 % known formula, give the electron density, thickness, and formula
-                    s.electronDensity(n) = varargin{1};
-                    s.thickness(n) = varargin{2};
-                    s.formula{n} = varargin{3};
+                case 2 % unkown formula, give the electron density and depth
+                    s.composition.electronDensity(n) = varargin{1};
+                    s.composition.depth(n) = varargin{2};
+                case 3 % known formula, give the electron density, depth, and formula
+                    s.composition.electronDensity(n) = varargin{1};
+                    s.composition.depth(n) = varargin{2};
+                    s.composition.formula{n} = varargin{3};
                     s.parseFormula(n);
                     s.getDensity(n);
                 otherwise
@@ -84,7 +61,7 @@ classdef xlayers < handle
         end
         
         % remove a layer
-        function removeLayer(s, n)
+        function popLayer(s, n)
             
             if n > s.N
                 error('The layer #%d does not exist.', n);
@@ -94,14 +71,14 @@ classdef xlayers < handle
             s.N = s.N - 1;
             sel(n) = false;
             
-            s.electronDensity = s.electronDensity(sel);
-            s.thickness = s.thickness(sel);
-            s.formula = s.formula(sel);
-            s.elements = s.elements(sel);
-            s.stoichiometry = s.stoichiometry(sel);
-            s.molecularWeight = s.molecularWeight(sel);
-            s.electronNumber = s.electronNumber(sel);
-            s.density = s.density(sel);
+            s.composition.electronDensity = s.composition.electronDensity(sel);
+            s.composition.depth = s.composition.depth(sel);
+            s.composition.formula = s.composition.formula(sel);
+            s.composition.elements = s.composition.elements(sel);
+            s.composition.stoichiometry = s.composition.stoichiometry(sel);
+            s.composition.molecularWeight = s.composition.molecularWeight(sel);
+            s.composition.electronNumber = s.composition.electronNumber(sel);
+            s.composition.density = s.composition.density(sel);
             
         end
         
@@ -110,15 +87,15 @@ classdef xlayers < handle
             % leading to changes in parsed formula, number of electrons,
             % stoichiometry, and density
             
-            for i = 1 : length(s.elements{n})
-                if strcmp(s.elements{n}{i}, element)
-                    s.stoichiometry{n}(i) = newStoichiometryNumber;
+            for i = 1 : length(s.composition.elements{n})
+                if strcmp(s.composition.elements{n}{i}, element)
+                    s.composition.stoichiometry{n}(i) = newStoichiometryNumber;
                     
                     newFormula = '';
-                    for j = 1 : length(s.elements{n})
-                        newFormula = strcat(newFormula, s.elements{n}{j}, num2str(s.stoichiometry{n}(j)));
+                    for j = 1 : length(s.composition.elements{n})
+                        newFormula = strcat(newFormula, s.composition.elements{n}{j}, num2str(s.composition.stoichiometry{n}(j)));
                     end
-                    s.formula{n} = newFormula;
+                    s.composition.formula{n} = newFormula;
                     s.parseFormula(n);
                     s.getDensity(n);
                     break;
@@ -130,7 +107,7 @@ classdef xlayers < handle
         % calculate x-ray optical properties
         function calculateRefractionIndex(s, energy, indices)
             
-            s.energy = energy;
+            s.refraction.energy = energy;
             s.getWavelength;
             
             if nargin == 2
@@ -138,12 +115,11 @@ classdef xlayers < handle
             end
             
             
-            
             for k = indices
-                if s.energy < 0.003
+                if s.refraction.energy < 0.003
                     error('X-ray energy must be larger than 3 eV.');
                 else
-                    if s.density(k)
+                    if s.composition.density(k)
                         s.calculateDispersionAbsorption(k);
                     else
                         s.calculateDispersion(k);
@@ -154,26 +130,26 @@ classdef xlayers < handle
         end
         
         % calculate the detailed optics
-        function optics(s, angle)
+        function calculateOptics(s, angle)
             
             s.M = length(angle);
-            s.angle = reshape(angle, numel(angle), 1);
-            s.refracAngle = sqrt(repmat(s.angle, 1, s.N).^2 - 2 * repmat(s.dispersion, s.M, 1) + 2i * repmat(s.absorption, s.M, 1));
+            s.optics.angle = reshape(angle, numel(angle), 1);
+            s.optics.refracAngle = sqrt(repmat(s.optics.angle, 1, s.N).^2 - 2 * repmat(s.refraction.dispersion, s.M, 1) + 2i * repmat(s.refraction.absorption, s.M, 1));
             
             % calculate the refraction matrices
-            if s.thickness(end) ~= Inf
-                error('The last layer must have infinite thickness.');
+            if s.composition.depth(end) ~= Inf
+                error('The last layer must have infinite depth.');
             end
             
-            theta1 = [s.angle, s.refracAngle(:, 1:end-1)];
-            theta2 = s.refracAngle;
-            d1 = repmat([0, s.thickness(:, 1:end-1)], s.M, 1);
-            d2 = repmat([s.thickness(1:end-1), 0], s.M, 1); % calculate the intensity at the interface for the last layer
+            theta1 = [s.optics.angle, s.optics.refracAngle(:, 1:end-1)];
+            theta2 = s.optics.refracAngle;
+            d1 = repmat([0, s.composition.depth(:, 1:end-1)], s.M, 1);
+            d2 = repmat([s.composition.depth(1:end-1), 0], s.M, 1); % calculate the intensity at the interface for the last layer
             
             ratio1 = (theta1 + theta2) / 2 ./ theta1;
             ratio2 = (theta1 - theta2) / 2 ./ theta1;
-            expo1 = 1i * pi / s.wavelength * (theta1 .* d1 + theta2 .* d2);
-            expo2 = 1i * pi / s.wavelength * (theta1 .* d1 - theta2 .* d2);
+            expo1 = 1i * pi / s.refraction.wavelength * (theta1 .* d1 + theta2 .* d2);
+            expo2 = 1i * pi / s.refraction.wavelength * (theta1 .* d1 - theta2 .* d2);
             
             m = zeros(s.M, s.N, 4);
             m(:, :, 1) = ratio1 .* exp(-expo1);
@@ -209,40 +185,40 @@ classdef xlayers < handle
             end
             
             
-            phaseLength = cumsum([0, s.thickness(1:end-1)]) - [s.thickness(1:end-1), 0] / 2;
-            phaseShift = 2 * pi / s.wavelength * s.refracAngle .* repmat(phaseLength, s.M, 1);
-            s.transmission = tamp .* exp( 1i * phaseShift );
-            s.reflection = ramp .* exp( -1i * phaseShift );
+            phaseLength = cumsum([0, s.composition.depth(1:end-1)]) - [s.composition.depth(1:end-1), 0] / 2;
+            phaseShift = 2 * pi / s.refraction.wavelength * s.optics.refracAngle .* repmat(phaseLength, s.M, 1);
+            s.optics.transmission = tamp .* exp( 1i * phaseShift );
+            s.optics.reflection = ramp .* exp( -1i * phaseShift );
             
-            alpha = repmat(s.angle, 1, s.N);
-            delta = repmat(s.dispersion, s.M, 1);
-            beta = repmat(s.absorption, s.M, 1);
-            s.penetration = s.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
+            alpha = repmat(s.optics.angle, 1, s.N);
+            delta = repmat(s.refraction.dispersion, s.M, 1);
+            beta = repmat(s.refraction.absorption, s.M, 1);
+            s.optics.penetration = s.refraction.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
             
             % intensity below each of the interface
-            z = repmat(cumsum([0, s.thickness]), s.M, 1);
-            attenuation = exp( - z(:,1:end-1) ./ [ones(s.M, 1), s.penetration(:, 1:end-1)]);
-            s.layerIntensity = abs((s.transmission + s.reflection).^2) .* attenuation;
+            z = repmat(cumsum([0, s.composition.depth]), s.M, 1);
+            attenuation = exp( - z(:,1:end-1) ./ [ones(s.M, 1), s.optics.penetration(:, 1:end-1)]);
+            s.optics.layerIntensity = abs((s.optics.transmission + s.optics.reflection).^2) .* attenuation;
             
             % integrated intensity for each layer
             zdiff = z(:, 2:end) - z(:, 1:end-1);
-            integralFactor = s.penetration .* (exp(-z(:, 1:end-1) ./ s.penetration) - exp(-z(:, 2:end) ./ s.penetration));
-            infIndex = (s.penetration == Inf);
+            integralFactor = s.optics.penetration .* (exp(-z(:, 1:end-1) ./ s.optics.penetration) - exp(-z(:, 2:end) ./ s.optics.penetration));
+            infIndex = (s.optics.penetration == Inf);
             integralFactor(infIndex) = zdiff(infIndex);
-            s.layerIntensity = s.layerIntensity .* integralFactor;
+            s.optics.layerIntensity = s.optics.layerIntensity .* integralFactor;
             
         end
         
         % calculate the intensity for a given element
         function calculateFluoIntensity(s, element)
             
-            s.chosenElement = element;
+            s.fit.chosenElement = element;
             
             location = zeros(1, s.N); % locate which layer the element is in
-            for i = 1 : length(s.elements)
-                if ~isempty(s.elements{i})
-                    for j = 1 : length(s.elements{i})
-                        if strcmp(s.elements{i}{j}, element)
+            for i = 1 : length(s.composition.elements)
+                if ~isempty(s.composition.elements{i})
+                    for j = 1 : length(s.composition.elements{i})
+                        if strcmp(s.composition.elements{i}{j}, element)
                             location(i) = 1;
                             break;
                         end
@@ -250,7 +226,7 @@ classdef xlayers < handle
                 end
             end
             
-            s.fluoIntensity = sum(repmat(location, s.M, 1) .* s.layerIntensity, 2);
+            s.fit.fluoIntensity = sum(repmat(location, s.M, 1) .* s.optics.layerIntensity, 2);
             
         end
         
@@ -268,18 +244,18 @@ classdef xlayers < handle
             h = 6.626068e-34; % planck's constant
             e = 1.60217646e-19; % elemental charge
             NA = 6.02214199e23; % Avagadro's number
-            wl = (c * h / e)/( s.energy * 1000); % wavelength in m
+            wl = (c * h / e)/( s.refraction.energy * 1000); % wavelength in m
 
-            n = length(s.elements{k});
+            n = length(s.composition.elements{k});
             f1 = zeros(1, n);
             f2 = f1;
-            for i = 1:length(s.elements{k})
-                [f1(i),f2(i)] = getFormFactor(s.elements{k}{i}, s.energy);
+            for i = 1:length(s.composition.elements{k})
+                [f1(i),f2(i)] = getFormFactor(s.composition.elements{k}{i}, s.refraction.energy);
             end
 
-            factor = wl.^2 / (2*pi) * re * NA * s.density(k) * 1e6 / molecularWeight(s.elements{k},s.stoichiometry{k});
-            s.dispersion(k) = factor * sum(s.stoichiometry{k} .* f1);
-            s.absorption(k) = factor * sum(s.stoichiometry{k} .* f2);
+            factor = wl.^2 / (2*pi) * re * NA * s.composition.density(k) * 1e6 / molecularWeight(s.composition.elements{k},s.composition.stoichiometry{k});
+            s.refraction.dispersion(k) = factor * sum(s.composition.stoichiometry{k} .* f1);
+            s.refraction.absorption(k) = factor * sum(s.composition.stoichiometry{k} .* f2);
 
         end
         
@@ -293,7 +269,7 @@ classdef xlayers < handle
 
             re = 2.81794092e-5; % classical radius for electron in A
 
-            s.dispersion(k) = re * s.electronDensity(k) * s.wavelength^2 / 2 / pi;
+            s.refraction.dispersion(k) = re * s.composition.electronDensity(k) * s.refraction.wavelength^2 / 2 / pi;
 
         end
         
@@ -317,7 +293,7 @@ classdef xlayers < handle
             
             for k = indices
                 
-                f = s.formula{k};
+                f = s.composition.formula{k};
                 if isempty(f)
                     error('The chemical formula for layer %d does not exist!', n);
                 end
@@ -347,33 +323,33 @@ classdef xlayers < handle
                 end
                 number = ((f <= '9' & f >= '0') | f == '.');
                 n = sum(upperCase);
-                s.elements{k} = cell(1,n);
-                s.stoichiometry{k} = zeros(1,n);
+                s.composition.elements{k} = cell(1,n);
+                s.composition.stoichiometry{k} = zeros(1,n);
 
                 % obtain elements
                 start = find(upperCase);
                 finish = find((upperCase & ~[lowerCase(2:end),false]) | (lowerCase & ~[lowerCase(2:end),false]));
                 for i = 1:n
-                    s.elements{k}{i} = f(start(i):finish(i));
+                    s.composition.elements{k}{i} = f(start(i):finish(i));
                 end
 
                 % obtain stoichiometry numbers
                 start = find(number & ~[true, number(1:end-1)]);
                 finish = find(number & ~[number(2:end), false]);
                 for i = 1:n
-                    s.stoichiometry{k}(i) = str2double(f(start(i):finish(i)));
+                    s.composition.stoichiometry{k}(i) = str2double(f(start(i):finish(i)));
                 end
                 
                 % molecular weight and number of electrons
-                n = length(s.elements{k});
+                n = length(s.composition.elements{k});
                 mass = zeros(1, n);
                 number = zeros(1, n);
                 for i = 1:n
-                    mass(i) = s.AtomicMassTable(s.elements{k}{i});
-                    number(i) = s.ElectronTable(s.elements{k}{i});
+                    mass(i) = s.AtomicMassTable(s.composition.elements{k}{i});
+                    number(i) = s.ElectronTable(s.composition.elements{k}{i});
                 end
-                s.molecularWeight(k) = sum(s.stoichiometry{k} .* mass);
-                s.electronNumber(k) = sum(s.stoichiometry{k} .* number);
+                s.composition.molecularWeight(k) = sum(s.composition.stoichiometry{k} .* mass);
+                s.composition.electronNumber(k) = sum(s.composition.stoichiometry{k} .* number);
                 
             end
             
@@ -392,7 +368,7 @@ classdef xlayers < handle
             planckConstant = 6.626068e-34;
             kev = 1.60218e-16; % convert kev to joule
 
-            s.wavelength = planckConstant * speedOfLight ./ (s.energy * kev) * 1e10;
+            s.refraction.wavelength = planckConstant * speedOfLight ./ (s.refraction.energy * kev) * 1e10;
 
         end
         
@@ -400,7 +376,33 @@ classdef xlayers < handle
         function getDensity(s, indices)
             
             NA = 6.02214199e23; % Avagadro's Number
-            s.density(indices) = s.electronDensity(indices) ./ s.electronNumber(indices) / NA .* s.molecularWeight(indices) * 1e24;
+            s.composition.density(indices) = s.composition.electronDensity(indices) ./ s.composition.electronNumber(indices) / NA .* s.composition.molecularWeight(indices) * 1e24;
+            
+        end
+        
+        % add data file
+        function loadData(s, file)
+            
+            rawdata = importdata(file);
+            line = rawdata.textdata{1};
+            if ~strcmpi(line(1:9),'e(kev)\qz')
+                error('%s %s',fname,'is not a .xlfuo file.');
+            else
+                emissionEnergy = rawdata.data(:,1);
+                spectra = rawdata.data(:,2:2:end);
+                specError = rawdata.data(:,3:2:end);
+                qz = str2num(line(10:end));
+                qz = qz(1:2:end);
+                if length(qz) ~= size(spectra,2)
+                    error('%s %s',fname,': # of qz and # of spectra should match.');
+                end
+                
+                s.data.energy = emissionEnergy;
+                s.data.spectra = spectra;
+                s.data.specError = specError;
+                s.data.angle = asin(qz * s.refraction.wavelength / 4 / pi);
+                
+            end
             
         end
         
