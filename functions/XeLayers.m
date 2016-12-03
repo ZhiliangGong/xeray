@@ -1,41 +1,41 @@
 classdef XeLayers < handle
     % tratified layer structure for x-ray fluorescence
     % this class holds the general information of each layer
-    
+
     properties
-        
+
         % basic
         N % number of layers
         M % number of incidence angles
-        
+
         % system
         composition
         refraction
         optics
-        
+
         % fitting
         data
         fit
-        
+
         % supporting database
         ElectronTable
         AtomicMassTable
         FormFactorTable
-        
+
     end
-    
+
     methods
-        
+
         % construct an instance, and load the supporting database
         function s = XeLayers
-            
+
             s.generateSupportDatabase;
-            
+
         end
-        
+
         % add a layer, calculate refraction index
         function updateLayer(s, n, varargin)
-            
+
             if isempty(s.N)
                 s.N = 1;
                 n = 1;
@@ -43,7 +43,7 @@ classdef XeLayers < handle
                 s.N = s.N + 1;
                 n = s.N;
             end
-            
+
             switch length(varargin)
                 case 2 % unkown formula, give the electron density and depth
                     s.composition.electronDensity(n) = varargin{1};
@@ -57,20 +57,20 @@ classdef XeLayers < handle
                 otherwise
                     error('Arguments for push function not right.');
             end
-            
+
         end
-        
+
         % remove a layer
         function popLayer(s, n)
-            
+
             if n > s.N
                 error('The layer #%d does not exist.', n);
             end
-            
+
             sel = true(1, s.N);
             s.N = s.N - 1;
             sel(n) = false;
-            
+
             s.composition.electronDensity = s.composition.electronDensity(sel);
             s.composition.depth = s.composition.depth(sel);
             s.composition.formula = s.composition.formula(sel);
@@ -79,18 +79,18 @@ classdef XeLayers < handle
             s.composition.molecularWeight = s.composition.molecularWeight(sel);
             s.composition.electronNumber = s.composition.electronNumber(sel);
             s.composition.density = s.composition.density(sel);
-            
+
         end
-        
+
         % update layer formula
         function updateFormula(s, n, element, newStoichiometryNumber)
             % leading to changes in parsed formula, number of electrons,
             % stoichiometry, and density
-            
+
             for i = 1 : length(s.composition.elements{n})
                 if strcmp(s.composition.elements{n}{i}, element)
                     s.composition.stoichiometry{n}(i) = newStoichiometryNumber;
-                    
+
                     newFormula = '';
                     for j = 1 : length(s.composition.elements{n})
                         newFormula = strcat(newFormula, s.composition.elements{n}{j}, num2str(s.composition.stoichiometry{n}(j)));
@@ -101,20 +101,20 @@ classdef XeLayers < handle
                     break;
                 end
             end
-            
+
         end
-        
+
         % calculate x-ray optical properties
         function calculateRefractionIndex(s, energy, indices)
-            
+
             s.refraction.energy = energy;
             s.getWavelength;
-            
+
             if nargin == 2
                 indices = 1 : s.N;
             end
-            
-            
+
+
             for k = indices
                 if s.refraction.energy < 0.003
                     error('X-ray energy must be larger than 3 eV.');
@@ -126,37 +126,37 @@ classdef XeLayers < handle
                     end
                 end
             end
-            
+
         end
-        
+
         % calculate the detailed optics
         function calculateOptics(s, angle)
-            
+
             s.M = length(angle);
             s.optics.angle = reshape(angle, numel(angle), 1);
             s.optics.refracAngle = sqrt(repmat(s.optics.angle, 1, s.N).^2 - 2 * repmat(s.refraction.dispersion, s.M, 1) + 2i * repmat(s.refraction.absorption, s.M, 1));
-            
+
             % calculate the refraction matrices
             if s.composition.depth(end) ~= Inf
                 error('The last layer must have infinite depth.');
             end
-            
+
             theta1 = [s.optics.angle, s.optics.refracAngle(:, 1:end-1)];
             theta2 = s.optics.refracAngle;
             d1 = repmat([0, s.composition.depth(:, 1:end-1)], s.M, 1);
             d2 = repmat([s.composition.depth(1:end-1), 0], s.M, 1); % calculate the intensity at the interface for the last layer
-            
+
             ratio1 = (theta1 + theta2) / 2 ./ theta1;
             ratio2 = (theta1 - theta2) / 2 ./ theta1;
             expo1 = 1i * pi / s.refraction.wavelength * (theta1 .* d1 + theta2 .* d2);
             expo2 = 1i * pi / s.refraction.wavelength * (theta1 .* d1 - theta2 .* d2);
-            
+
             m = zeros(s.M, s.N, 4);
             m(:, :, 1) = ratio1 .* exp(-expo1);
             m(:, :, 2) = ratio2 .* exp(-expo2);
             m(:, :, 3) = ratio2 .* exp(expo2);
             m(:, :, 4) = ratio1 .* exp(expo1);
-            
+
             tempmatrix = cell(s.M, s.N);
             matrices = cell(s.M, s.N);
             for i = 1 : s.M
@@ -168,52 +168,52 @@ classdef XeLayers < handle
                     end
                 end
             end
-            
+
             tamp = zeros(s.M, s.N);
             ramp = zeros(s.M, s.N);
-            
+
             ramp(:, end) = 0;
             for i = 1 : s.M
                 tamp(i, end) = 1 / matrices{i, 1}(1, 1);
             end
-            
+
             for i = 1 : s.M
                 for j = 1 : s.N - 1
                     tamp(i, j) = matrices{i, j+1}(1, 1) * tamp(i, end);
                     ramp(i, j) = matrices{i, j+1}(2, 1) * tamp(i, end);
                 end
             end
-            
-            
+
+
             phaseLength = cumsum([0, s.composition.depth(1:end-1)]) - [s.composition.depth(1:end-1), 0] / 2;
             phaseShift = 2 * pi / s.refraction.wavelength * s.optics.refracAngle .* repmat(phaseLength, s.M, 1);
             s.optics.transmission = tamp .* exp( 1i * phaseShift );
             s.optics.reflection = ramp .* exp( -1i * phaseShift );
-            
+
             alpha = repmat(s.optics.angle, 1, s.N);
             delta = repmat(s.refraction.dispersion, s.M, 1);
             beta = repmat(s.refraction.absorption, s.M, 1);
             s.optics.penetration = s.refraction.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
-            
+
             % intensity below each of the interface
             z = repmat(cumsum([0, s.composition.depth]), s.M, 1);
             attenuation = exp( - z(:,1:end-1) ./ [ones(s.M, 1), s.optics.penetration(:, 1:end-1)]);
             s.optics.layerIntensity = abs((s.optics.transmission + s.optics.reflection).^2) .* attenuation;
-            
+
             % integrated intensity for each layer
             zdiff = z(:, 2:end) - z(:, 1:end-1);
             integralFactor = s.optics.penetration .* (exp(-z(:, 1:end-1) ./ s.optics.penetration) - exp(-z(:, 2:end) ./ s.optics.penetration));
             infIndex = (s.optics.penetration == Inf);
             integralFactor(infIndex) = zdiff(infIndex);
             s.optics.layerIntensity = s.optics.layerIntensity .* integralFactor;
-            
+
         end
-        
+
         % calculate the intensity for a given element
         function calculateFluoIntensity(s, element)
-            
+
             s.fit.chosenElement = element;
-            
+
             location = zeros(1, s.N); % locate which layer the element is in
             for i = 1 : length(s.composition.elements)
                 if ~isempty(s.composition.elements{i})
@@ -225,11 +225,11 @@ classdef XeLayers < handle
                     end
                 end
             end
-            
+
             s.fit.fluoIntensity = sum(repmat(location, s.M, 1) .* s.optics.layerIntensity, 2);
-            
+
         end
-        
+
         % calculate dispersion and absorption
         function calculateDispersionAbsorption(s, k)
             % obtain dispersion and absorption from chemical formula and density
@@ -258,7 +258,7 @@ classdef XeLayers < handle
             s.refraction.absorption(k) = factor * sum(s.composition.stoichiometry{k} .* f2);
 
         end
-        
+
         % calculate dispersion only based on electron density
         function calculateDispersion(s, k)
 
@@ -272,27 +272,27 @@ classdef XeLayers < handle
             s.refraction.dispersion(k) = re * s.composition.electronDensity(k) * s.refraction.wavelength^2 / 2 / pi;
 
         end
-        
+
         % generate supporting database
         function generateSupportDatabase(s)
-            
+
             load('electronTable.mat');
             load('atomicMassTable.mat');
             load('formFactor.mat');
-            
+
             s.ElectronTable = electron;
             s.AtomicMassTable = atomicMass;
             s.FormFactorTable = formFactor;
-            
+
         end
-        
+
         % parse formula, handle indices as a vector
         function parseFormula(s, indices)
             % parse the formula, calculate the molecular weight, and the
             % number of electrons in the formula
             
             for k = indices
-                
+
                 f = s.composition.formula{k};
                 if isempty(f)
                     error('The chemical formula for layer %d does not exist!', n);
@@ -339,7 +339,7 @@ classdef XeLayers < handle
                 for i = 1:n
                     s.composition.stoichiometry{k}(i) = str2double(f(start(i):finish(i)));
                 end
-                
+
                 % molecular weight and number of electrons
                 n = length(s.composition.elements{k});
                 mass = zeros(1, n);
@@ -350,11 +350,11 @@ classdef XeLayers < handle
                 end
                 s.composition.molecularWeight(k) = sum(s.composition.stoichiometry{k} .* mass);
                 s.composition.electronNumber(k) = sum(s.composition.stoichiometry{k} .* number);
-                
+
             end
-            
+
         end
-        
+
         % convert energy (kev) to wavelength
         function getWavelength(s)
         % calculate the x-ray wavelength based on the energy
@@ -371,18 +371,18 @@ classdef XeLayers < handle
             s.refraction.wavelength = planckConstant * speedOfLight ./ (s.refraction.energy * kev) * 1e10;
 
         end
-        
+
         % get the density
         function getDensity(s, indices)
-            
+
             NA = 6.02214199e23; % Avagadro's Number
             s.composition.density(indices) = s.composition.electronDensity(indices) ./ s.composition.electronNumber(indices) / NA .* s.composition.molecularWeight(indices) * 1e24;
-            
+
         end
-        
+
         % add data file
         function loadData(s, file)
-            
+
             rawdata = importdata(file);
             line = rawdata.textdata{1};
             if ~strcmpi(line(1:9),'e(kev)\qz')
@@ -396,16 +396,16 @@ classdef XeLayers < handle
                 if length(qz) ~= size(spectra,2)
                     error('%s %s',fname,': # of qz and # of spectra should match.');
                 end
-                
+
                 s.data.energy = emissionEnergy;
                 s.data.spectra = spectra;
                 s.data.specError = specError;
                 s.data.angle = asin(qz * s.refraction.wavelength / 4 / pi);
-                
+
             end
-            
+
         end
-        
+
     end
-    
+
 end
