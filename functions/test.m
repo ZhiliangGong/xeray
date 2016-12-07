@@ -1,7 +1,7 @@
 clear;
 clc;
 
-file = '/Users/zhilianggong/Documents/MATLAB/xeray/examples/bulk.xfluo';
+file = '../examples/bulk.xfluo';
 
 s = XeLayers(10, file);
 s.system.push(1, 0.334, Inf);
