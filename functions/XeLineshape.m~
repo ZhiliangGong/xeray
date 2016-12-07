@@ -1,0 +1,22 @@
+classdef XeLineshape < handle
+    
+    properties
+        
+        type
+        energy
+        intensity
+        parameters
+        
+    end
+    
+    methods
+        
+        function this = XeLineshape(type, energy)
+            
+        end
+        
+        
+        
+    end
+    
+end

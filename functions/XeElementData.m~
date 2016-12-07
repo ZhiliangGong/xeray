@@ -1,0 +1,150 @@
+classdef XeElementData < handle
+    
+    properties
+        
+        element
+        energy
+        intensity
+        intensityError
+        
+        smoothEnergy
+        smoothIntensity
+        
+        config
+        
+        ElementProfiles
+        
+    end
+    
+    methods
+        
+        function this = XeElementData(config)
+            
+            this.config = config;
+            this.generateElementProfiles();
+            
+        end
+        
+        function updateElement(this, element, rawdata, lineShape)
+            
+            if nargin == 3
+                lineShape = 'Gaussian';
+            end
+            
+            this.element = element;
+            profile = this.getElementProfile(element);
+            
+            % find the energy range
+            n = closestPointIndex(profile.range, rawdata.energy);
+            indexRange = (n(1):n(2));
+            
+            this.energy = rawdata.energy(indexRange);
+            this.intensity = rawdata.intensity(indexRange, :);
+            this.intensityError = rawdata.intensityError(indexRange, :);
+            
+            this.fitSpectraPeak(profile, lineShape);
+
+        end
+        
+        function fitSpectraPeak(this)
+            
+            [~, n] = size(this.intensity);
+            N = 500;
+            this.smoothEnergy = linspace(this.energy(1),this.energy(end),N)';
+            this.smoothIntensity = zeros(N, n);
+            switch length(profile.peak)
+                case 1
+                    x.lineShapePara = zeros(5,n);
+                case 2
+                    x.lineShapePara = zeros(8,n);
+                otherwise
+                    error('Curve type not found.');
+            end
+            for i = 1:n
+                [x.lineShapePara(:,i),~,this.smoothIntensity(:,i)] = fluoCurveFit(this.energy,this.intensity(:,i),type,profile.peak,element.width,N);
+            end
+            
+            x.netIntensity = this.intensity - [this.energy,ones(size(this.energy))]*x.lineShapePara(end-1:end,:);
+            x.netIntensityFit = this.smoothIntensity - [this.smoothEnergy,ones(size(this.smoothEnergy))]*x.lineShapePara(end-1:end,:);
+            
+            %calculate the signal and error
+            x.peaks = profile.peak;
+            switch length(profile.peak)
+                case 1
+                    M = 1;
+                    x.pickedPeak = 1;
+                    ratio = 1;
+                case 2
+                    ratio = sum(x.lineShapePara(1,:))/sum(x.lineShapePara(3,:));
+                    if ratio > 1
+                        M = 1;
+                        ratio = ratio/(ratio+1);
+                        x.pickedPeak = 1;
+                    else
+                        M = 4;
+                        ratio = 1/(ratio+1);
+                        x.pickedPeak = 2;
+                    end
+            end
+            switch lower(type)
+                case {'gauss','gaussian'}
+                    x.signal = x.lineShapePara(M,:).*x.lineShapePara(2+M,:)*sqrt(2*pi);
+                case {'lorentz','lorentzian'}
+                    x.signal = x.lineShapePara(M,:).*x.lineShapePara(2+M,:)*2;
+            end
+            x.signalError = sqrt(sum(this.intensityError.^2))*range(this.energy)/length(this.energy) * ratio;
+            
+        end
+        
+        function generateElementProfiles(this)
+            
+            filename = this.config{7};
+            text = textread(filename, '%s', 'delimiter', '\n');
+            n = sum((catStringCellArray(text) == '#'));
+            
+            table.elements = cell(1, n);
+            table.peaks = cell(1, n);
+            table.ranges = cell(1, n);
+            table.widths = cell(1, n);
+
+            m = length(text);
+            n = 1;
+            for i = 1:m
+                if ~isempty(text{i}) && strcmp(text{i}(1),'#')
+                    table.elements{n} = text{i}(2:end);
+                    bounds = textscan(text{i+1},'%s %f %f');
+                    table.ranges{n} = [bounds{2},bounds{3}];
+                    table.peaks{n} = str2num(text{i+2}(6:end));
+                    table.widths{n} = str2num(text{i+3}(15:end));
+                    n = n + 1;
+                end
+            end
+            
+            this.ElementProfiles = table;
+
+        end
+        
+        function profile = getElementProfile(this, element)
+            
+            indicator = false;
+            profiles = this.ElementProfiles;
+            for n = 1 : length(profiles.elements)
+                if strcmp(element, profiles.elements{n})
+                    profile.element = profiles.elements{n};
+                    profile.peaks = profiles.peaks{n};
+                    profile.range = profiles.ranges{n};
+                    profile.width = profiles.widths{n};
+                    indicator = true;
+                    break;
+                end
+            end
+            
+            if ~indicator
+                error('Did not find the element in the elementEnergy.txt file!');
+            end
+            
+        end
+        
+    end
+    
+end

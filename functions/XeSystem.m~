@@ -1,0 +1,101 @@
+classdef XeSystem < handle
+    
+    properties
+        
+        N
+        energy
+        electronDensity
+        thickness
+        
+        chemical
+        refraction
+        
+        density
+        
+    end
+    
+    methods
+        
+        function this = XeSystem(energy)
+            
+            this.energy = energy;
+            this.chemical = ChemicalFormula();
+            
+        end
+        
+        function push(this, n, varargin)
+
+            if isempty(this.N)
+                this.N = 1;
+                n = 1;
+            elseif n > this.N
+                this.N = this.N + 1;
+                n = this.N;
+            end
+
+            
+            switch length(varargin)
+                
+                % unkown formula, give the electron density and thickness
+                case 2
+                    this.electronDensity(n) = varargin{1};
+                    this.thickness(n) = varargin{2};
+                    this.chemical.push(n);
+                    
+                % known formula, give the electron density, thickness, and formula
+                case 3                    
+                    this.electronDensity(n) = varargin{1};
+                    this.thickness(n) = varargin{2};
+                    this.chemical.push(n, varargin{3});
+                    
+                otherwise
+                    error('Arguments for update layer function not right.');
+            end
+            
+            this.getDensity(n);
+
+        end
+        
+        function pop(this, indices)
+            
+            if max(indices) > this.N
+                warning('The layer #%d does not exist.', max(indices));
+            else
+                sel = true(1, this.N);
+                sel(indices) = false;
+                this.electronDensity = this.electronDensity(sel);
+                this.thickness = this.thickness(sel);
+                this.density = this.density(sel);
+
+                this.chemical.pop(indices);
+                this.N = this.N - length(indices);
+            end
+
+        end
+        
+        function updateChemical(this, n, element, newStoichiometryNumber)
+            
+            this.chemical.update(n, element, newStoichiometryNumber);
+            this.getDensity(n);
+
+        end
+        
+        function getDensity(this, indices)
+            
+            this.density(indices) = this.chemical.convertEd2Density(indices, this.electronDensity(indices));
+            
+        end
+        
+        function getRefraction(this, indices)
+            
+            for n = indices
+                if this.density(n) == 0
+                    
+                end
+            end
+            
+        end
+        
+    end
+    
+end

@@ -1,0 +1,60 @@
+classdef XeLayers < handle
+    % tratified layer structure for x-ray fluorescence
+    % this class holds the general information of each layer
+
+    properties
+
+        system
+        rawdata
+        data
+        fit
+
+        config
+
+    end
+
+    methods
+        
+        % construct an instance, and load the supporting database
+        function this = XeLayers(energy, file)
+            
+            this.config = textread('xeray-config.txt', '%s', 'delimiter', '\n');
+            
+            this.system = XeSystem(this.config, energy);
+            this.rawdata = XeRawData(file);
+            this.data = XeElementData(this.config);
+            this.fit = XeFit();
+
+        end
+        
+        % obtain the data for a chosen element as a preparation for fitting
+        function selectElement(this, element, lin)
+            
+            this.data.updateElement(element, this.rawdata, lineShape);
+            
+        end
+
+        % calculate the intensity for a given element
+        function calculateFluoIntensity(this, element)
+
+            this.fit.element = element;
+
+            location = zeros(1, this.N); % locate which layer the element is in
+            for i = 1 : length(this.composition.elements)
+                if ~isempty(this.composition.elements{i})
+                    for j = 1 : length(this.composition.elements{i})
+                        if strcmp(this.composition.elements{i}{j}, element)
+                            location(i) = 1;
+                            break;
+                        end
+                    end
+                end
+            end
+
+            this.fit.fluoIntensity = sum(repmat(location, this.M, 1) .* this.optics.layerIntensity, 2);
+
+        end
+        
+    end
+
+end

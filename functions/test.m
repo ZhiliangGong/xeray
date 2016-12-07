@@ -1,12 +1,13 @@
 clear;
 clc;
-s = XeLayers;
-s.updateLayer(1, 0.25, 12);
-s.updateLayer(2, 0.4, 8);
-s.updateLayer(3, 0.334, Inf, 'H2OCa0.009Cl0.018');
-calculateRefractionIndex(s, 10);
+
+file = '/Users/zhilianggong/Documents/MATLAB/xeray/examples/bulk.xfluo';
+
+s = XeLayers(10, file);
+s.system.push(1, 0.334, Inf);
+s.system.push(1, 0.25, 12);
+s.system.push(2, 0.4, 8);
+s.system.push(3, 0.334, Inf, 'H2OCa0.009Cl0.018');
 angle = linspace(0.001, 0.004, 10);
-s.calculateOptics(angle);
-s.calculateFluoIntensity('Ca');
-s.loadData('/Users/zhilianggong/Documents/MATLAB/xeray/examples/bulk.xfluo');
+%s.selectElement('Ca');
 s
