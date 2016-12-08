@@ -15,8 +15,6 @@ s.system.insert(1, 0.334, Inf, 'H2OCa0.0009Cl0.0018');
 %s.plotSignal();
 %s.runFluoFit([]);
 %s.runFluoFit([],[0, 0.01, 0, 50, 1], [0, 0, 0, 0, 1], [0, 0, 0, 0, 1]);
-lb = [0, 0, 0, 50, 1];
-ub = [0, 2, 0, 50, 1];
-s.runFluoFit([], lb, ub);
-s.plotSignal();
+start = 
+s.runFluoFit([],[0, 1, 0, 50, 1], [0, 0, 0, 0, 1], [0, 100, 0, 0, 1]);
 %a = s.system.updateCalculationWithBounds([0, 1, 0, 0, 1], [0, 1, 0, 0, 1], [0, 1, 0, 1, 1])

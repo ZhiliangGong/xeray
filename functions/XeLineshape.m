@@ -9,6 +9,7 @@ classdef XeLineshape < handle
         parameters
         signal
         signalError
+        mainPeak
         
     end
     
@@ -43,14 +44,17 @@ classdef XeLineshape < handle
                 case 1
                     M = 1;
                     ratio = 1;
+                    this.mainPeak = peaks;
                 case 2
                     ratio = sum(this.parameters(1,:)) / sum(this.parameters(3,:));
                     if ratio > 1
                         M = 1;
                         ratio = ratio/(ratio+1);
+                        this.mainPeak = peaks(1);
                     else
                         M = 4;
                         ratio = 1/(ratio+1);
+                        this.mainPeak = peaks(2);
                     end
             end
             

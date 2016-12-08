@@ -25,10 +25,6 @@ classdef XeFitting < handle
             this.upper = values{2};
             this.steps = values{3};
             
-            if sum(this.upper < this.lower) > 0
-                error('The lower bounds must be smaller or equal to the upper bounds.');
-            end
-            
         end
         
         function para = fitParameters(this)
@@ -49,28 +45,27 @@ classdef XeFitting < handle
             
         end
         
-        function x = lb(this)
+        function lb = lb(this)
             
-            x = this.lower(this.varied);
-            
-        end
-        
-        function x = ub(this)
-            
-            x = this.upper(this.varied);
+            lb = this.lower(this.varied);
             
         end
         
-        function st = start(this)
+        function ub = realUpperBounds(this)
             
-            st = (this.lower(this.varied) + this.upper(this.varied)) / 2;
+            ub = this.upper(this.varied);
+            
+        end
+        
+        function st = realStarts(this)
+            
+            st = this.start(this.varied);
             
         end
         
         function fp = fullParameter(this, fittingStart)
             
-            fp = zeros(1, 5);
-            fp(this.fixed) = this.lower(this.fixed);
+            fp = this.start;
             fp(this.varied) = fittingStart;
             
         end

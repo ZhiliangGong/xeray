@@ -1,7 +1,7 @@
 classdef XeElementData < handle
-    
+
     properties
-        
+
         element
         angle
         energy
@@ -9,53 +9,54 @@ classdef XeElementData < handle
         intensityError
         netIntensity
         lineshape
-        
+
         config
-        
+
         ElementProfiles
-        
+
     end
-    
+
     methods
-        
-        function this = XeElementData(config)
-            
+
+        function this = XeElementData(config, element, rawdata, lineshape)
+
             this.config = config;
             this.generateElementProfiles();
-            
+            this.updateElement(element, rawdata, lineshape);
+
         end
-        
+
         function updateElement(this, element, rawdata, lineshape)
-            
+
             if nargin == 3
                 lineshape = 'Gaussian';
             end
-            
+
             this.element = element;
             this.angle = rawdata.angle;
             profile = this.getElementProfile(element);
-            
+
             % find the energy range
             n = closestPointIndex(profile.range, rawdata.energy);
             indexRange = (n(1):n(2));
-            
+
             this.energy = rawdata.energy(indexRange);
             this.intensity = rawdata.intensity(indexRange, :);
             this.intensityError = rawdata.intensityError(indexRange, :);
-            
+
             N = 500;
             this.lineshape = XeLineshape(this.energy, this.intensity, this.intensityError, lineshape, profile.peaks, profile.width, N);
-            
+
             this.netIntensity = this.intensity - [this.energy, ones(size(this.energy))] * this.lineshape.parameters(end-1:end, :);
 
         end
-        
+
         function generateElementProfiles(this)
-            
+
             filename = this.config{7};
             text = textread(filename, '%s', 'delimiter', '\n');
             n = sum((catStringCellArray(text) == '#'));
-            
+
             table.elements = cell(1, n);
             table.peaks = cell(1, n);
             table.ranges = cell(1, n);
@@ -73,13 +74,13 @@ classdef XeElementData < handle
                     n = n + 1;
                 end
             end
-            
+
             this.ElementProfiles = table;
 
         end
-        
+
         function profile = getElementProfile(this, element)
-            
+
             indicator = false;
             profiles = this.ElementProfiles;
             for n = 1 : length(profiles.elements)
@@ -92,13 +93,13 @@ classdef XeElementData < handle
                     break;
                 end
             end
-            
+
             if ~indicator
                 error('Did not find the element in the elementEnergy.txt file!');
             end
-            
+
         end
-        
+
     end
-    
+
 end

@@ -197,6 +197,9 @@ classdef ChemicalFormula < handle
             
         end
         
+        function getStoichiometry(this, n)
+        end
+        
     end
     
 end

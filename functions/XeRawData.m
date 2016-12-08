@@ -1,22 +1,22 @@
 classdef XeRawData < handle
-    
+
     properties
-        
+
+        angle
         energy
         intensity
         intensityError
-        angle
-        
+
     end
-    
+
     methods
-        
+
         function this = XeRawData(file)
-            
+
             this.loadData(file);
-            
+
         end
-        
+
         function loadData(this, file)
 
             rawdata = importdata(file);
@@ -41,7 +41,7 @@ classdef XeRawData < handle
             end
 
         end
-        
+
     end
-    
+
 end

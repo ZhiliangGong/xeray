@@ -24,6 +24,18 @@ classdef XeRefraction < handle
             
         end
         
+        function push(this, newEnergy, varargin)
+            
+            this.energy = [this.energy, newEnergy];
+            this.getWavelength();
+            switch length(varargin)
+                case 1
+                    
+                case 5
+            end
+            
+        end
+        
         function pop(this, indices)
             
             if max(indices) > length(this.dispersion)
@@ -37,18 +49,12 @@ classdef XeRefraction < handle
             
         end
         
-        function calculateAllRefractionIndices(this, varargin)
+        function makeSpace(this, position)
             
-            switch length(varargin)
-                case 1
-                    electronDensity = varargin{1};
-                    this.calculateDispersion(electronDensity);
-                case 2
-                    density = varargin{1};
-                    elements = varargin{2};
-                    stoichiometry = varargin{3};
-                    this.calculateDispersionAbsorption(density, elements, stoichiometry);
-            end
+            sel = true(1, length(this.dispersion) + 1);
+            sel(position) = false;
+            this.dispersion(sel) = this.dispersion;
+            this.absorption(sel) = this.absorption;
             
         end
         
@@ -84,7 +90,7 @@ classdef XeRefraction < handle
 
             % units
             % electronDensity - /A^3, for water is 0.3344
-            % energy - keV
+            % incidenceEnergy - keV
             % wavelength - A
             
             re = 2.81794092e-5; % classical radius for electron in A
@@ -141,6 +147,14 @@ classdef XeRefraction < handle
 
             f1 = interp1(datatable(:,1),datatable(:,2), this.energy*1000, 'pchip');
             f2 = interp1(datatable(:,1),datatable(:,3), this.energy*1000, 'pchip');
+            
+        end
+        
+        function refractionAngle = getRefractionAngle(this, angle)
+            
+            m = length(angle);
+            n = length(this.dispersion);
+            refractionAngle = sqrt(repmat(angle, 1, n).^2 - 2 * repmat(this.dispersion, m, 1) + 2i * repmat(this.absorption, m, 1));
             
         end
         
