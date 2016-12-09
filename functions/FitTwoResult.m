@@ -25,6 +25,9 @@ classdef FitTwoResult < handle
             
         end
         
+        function getConfidenceWindow(this, confidence)
+        end
+        
     end
     
 end

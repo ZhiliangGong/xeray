@@ -80,7 +80,7 @@ classdef FitOneResult < handle
             
         end
         
-        function [window, adjWindow] = getConfidenceWindow(this, confidence)
+        function [window, adjWindow] = confidenceWindow(this, confidence)
             
             if nargin == 1
                 confidence = 0.95;
@@ -91,6 +91,18 @@ classdef FitOneResult < handle
             window = window + repmat(this.value, 2, 1);
             adjWindow = [-multiplier * this.adjustedStd; multiplier * this.adjustedStd];
             adjWindow = adjWindow+repmat(this.value, 2, 1);
+            this.confidenceWindow = window;
+            this.adjustedConfidenceWindow = adjWindow;
+            
+        end
+        
+        function cw = adjustedConfidenceWindow(this, confidence)
+            
+            if nargin == 1
+                confidence = 0.95;
+            end
+            
+            multiplier = norminv((1 - confidence) / 2+ confidence, 0, 1);
             
         end
         
