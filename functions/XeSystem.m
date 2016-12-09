@@ -213,7 +213,7 @@ classdef XeSystem < handle
 
         end
         
-        function getLayerIntegratedIntensity(this, angles)
+        function intensity = getLayerIntegratedIntensityForAngles(this, angles)
             
             if nargin == 1
                 angles = reshape(this.offsetAngle, length(this.offsetAngle), 1);
@@ -330,20 +330,20 @@ classdef XeSystem < handle
             
             intensity(:, end) = intensity(:, end) .* L .* (term0 + term1 - term2);
             
-            intensity = intensity / 1e12;
-            
-            this.layerIntensity = intensity;
+            intensity = intensity / 1e14;
             
         end
         
-        function intensity = calculateFluoIntensity(this, P, angles)
+        function getLayerIntegratedIntensity(this)
+            
+            this.layerIntensity = this.getLayerIntegratedIntensityForAngles();
+            
+        end
+        
+        function intensity = calculateFluoIntensity(this, P)
             
             % P: angle offset, scale factor, background, concentration, and
             % layer index
-            
-            if nargin == 2
-                angles = this.angle;
-            end
             
             if P(1) ~= this.offset
                 this.updateOffset(P(1));
@@ -351,24 +351,33 @@ classdef XeSystem < handle
             
             this.concentration(P(5)) = P(4);
             
-            intensity = sum(repmat(this.concentration, length(angles), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
+            intensity = sum(repmat(this.concentration, length(this.offsetAngle()), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
             
         end
         
-        function intensity = calculateFluoIntensityWithBounds(this, start, lower, upper, angles)
+        function intensity = calculateFluoIntensityCurve(this, P, angles)
+            
+            if P(1) ~= this.offset
+                this.updateOffset(P(1));
+            end
+            
+            this.concentration(P(5)) = P(4);
+            
+            intensity = sum(repmat(this.concentration, length(angles), 1) .* this.getLayerIntegratedIntensityForAngles(angles), 2)' * P(2) + P(3);
+            
+        end
+        
+        function intensity = calculateFluoIntensityWithBounds(this, start, lower, upper)
             
             % parameters: parameters being fitted, with the last one being
             % the layer index
             
-            if nargin == 4
-                angles = this.offsetAngle;
-            end
             fixed = (lower == upper);
             P = zeros(1, 5);
             P(fixed) = lower(fixed);
             P(~fixed) = start;
-            P
-            intensity = this.calculateFluoIntensity(P, angles);
+            
+            intensity = this.calculateFluoIntensity(P);
             
         end
         

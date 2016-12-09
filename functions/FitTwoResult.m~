@@ -1,0 +1,16 @@
+classdef FitTwoResult < handle
+    
+    properties
+        
+        chi2
+        likelihood
+        
+    end
+    
+    methods
+        
+        function
+        
+    end
+    
+end

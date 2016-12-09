@@ -99,6 +99,12 @@ classdef XeElementData < handle
             end
 
         end
+        
+        function angles = fineAngleRange(this, n)
+            
+            angles = linspace(min(this.angle), max(this.angle), n);
+            
+        end
 
     end
 

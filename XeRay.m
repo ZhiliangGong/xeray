@@ -779,10 +779,10 @@ initializeXeRay;
 
     function saveDataset_Callback(source,eventdata) %save the current data to workspace
         
-        fileName = 'XeRayDateSet';
+        fileName = 'XeRayDataSet';
         XeRayDataSet = x;
         save(fileName,'XeRayDataSet');
-        clear XeRayDateSet;
+        clear XeRayDataSet;
         
     end
 
@@ -1593,7 +1593,7 @@ initializeXeRay;
     function [elements,elementsProperty] = readElementEnergyFile
         
         text = textread(which('elementEnergy.txt'),'%s','delimiter','\n');
-        [string,~]=stringArrayCat('',text);
+        string = catStringCellArray(text);
         n = sum(string=='#');
         elements = cell(1,n);
         elementsProperty = cell(1,n);

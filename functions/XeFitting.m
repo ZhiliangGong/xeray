@@ -8,7 +8,9 @@ classdef XeFitting < handle
         upper
         steps
         
-        curve
+        all
+        one
+        two
         
     end
     
@@ -31,9 +33,9 @@ classdef XeFitting < handle
             
         end
         
-        function para = fitParameters(this)
+        function paras = fitParameters(this)
              
-            para = this.parameters(this.varied);
+            paras = this.parameters(this.varied);
             
         end
         
@@ -67,7 +69,7 @@ classdef XeFitting < handle
             
         end
         
-        function fp = fullParameter(this, fittingStart)
+        function fp = fullP(this, fittingStart)
             
             fp = zeros(1, 5);
             fp(this.fixed) = this.lower(this.fixed);
@@ -75,6 +77,21 @@ classdef XeFitting < handle
             
         end
         
+        function loc = location(this)
+            
+            loc = find(this.varied);
+            
+        end
+        
+        function loc = fitParaIndex(this, parameter)
+            
+            index = locateStringInCellArray(parameter, this.parameters);
+            loc = find(index == this.location);
+            if isempty(loc)
+                loc = 0;
+            end
+            
+        end
         
     end
     
