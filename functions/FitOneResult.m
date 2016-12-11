@@ -15,6 +15,10 @@ classdef FitOneResult < handle
         likelihoodPara
         likelihoodCurve
         
+        confidence
+        window
+        adjWindow
+        
     end
     
     methods
@@ -58,7 +62,7 @@ classdef FitOneResult < handle
             par_lk = this.likelihood;
             parfor i = 1:n
                 par_para = par_para0;
-                [lkPara{i}, flag] = fitGaussianLikelihood(par_para(:,i), par_lk(:,i));
+                [lkPara{i}, flag] = fitGaussianLikelihood(par_para(:, i), par_lk(:, i));
                 if flag
                     warning('%s %s', par_parameters{i}, 'fitting bad.');
                     quality{i} = 'bad';
@@ -71,26 +75,34 @@ classdef FitOneResult < handle
                 
             end
             lkPara = cell2mat(lkPara);
-            this.value = lkPara(2,:);
-            this.std = lkPara(3,:);
-            this.adjustedStd = (this.std).^(1/n);
+            this.value = lkPara(2, :);
+            this.std = lkPara(3, :);
+            this.confidence = (normcdf(1) - normcdf(-1))^(1/n);
+            this.adjustedStd = this.std .* norminv( (1 - this.confidence) / 2 + this.confidence, 0, 1 );
             this.fitQuality = quality;
             this.likelihoodPara = lkFitRange;
             this.likelihoodCurve = lkFit;
             
+            this.getConfidenceWindow();
+            
         end
         
-        function [window, adjWindow] = getConfidenceWindow(this, confidence)
+        function getConfidenceWindow(this, newConfidence)
             
             if nargin == 1
-                confidence = 0.95;
+                newConfidence = 0.95;
             end
             
-            multiplier = norminv((1 - confidence) / 2+ confidence, 0, 1);
-            window = [-multiplier * this.std; multiplier * this.std];
-            window = window + repmat(this.value, 2, 1);
-            adjWindow = [-multiplier * this.adjustedStd; multiplier * this.adjustedStd];
-            adjWindow = adjWindow+repmat(this.value, 2, 1);
+            if isempty(this.confidence) || newConfidence ~= this.confidence
+                this.confidence = newConfidence;
+                multiplier = norminv( (1 - newConfidence) / 2 + newConfidence, 0, 1 );
+                this.window = [-multiplier * this.std; multiplier * this.std];
+                this.window = this.window + repmat(this.value, 2, 1);
+                this.adjWindow = [-multiplier * this.adjustedStd; multiplier * this.adjustedStd];
+                this.adjWindow = this.adjWindow+repmat(this.value, 2, 1);
+            end
+            
+            
             
         end
         

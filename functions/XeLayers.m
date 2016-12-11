@@ -150,8 +150,9 @@ classdef XeLayers < handle
                                 chi2(i, j) = sum(((this.system.calculateFluoIntensity(P) - signal) ./ signalError).^2);
                             end
                         end
-                        two{1,2}.chi2 = chi2;
-                        two{1,2}.getLikelihood();
+                        two{1, 2}.chi2 = chi2;
+                        two{1, 2}.getLikelihood();
+                        two{1, 2}.getConfidenceWindow();
                     else
                         two = cell(m, m);
                         for k = 1 : m-1
@@ -181,8 +182,9 @@ classdef XeLayers < handle
                                         [~, chi2(g, h)] = lsqnonlin(myfun, p, lbs, ubs, options);
                                     end
                                 end
-                                two{k,l}.chi2 = chi2;
-                                two{k,l}.getLikelihood();
+                                two{k, l}.chi2 = chi2;
+                                two{k, l}.getLikelihood();
+                                two{k, l}.getConfidenceWindow();
                             end
                         end
                     end

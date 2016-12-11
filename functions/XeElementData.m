@@ -105,7 +105,7 @@ classdef XeElementData < handle
             angles = linspace(min(this.angle), max(this.angle), n);
             
         end
-
+        
     end
 
 end
