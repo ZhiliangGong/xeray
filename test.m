@@ -1,5 +1,8 @@
 clc;
 close all;
-a = XeRayGUI();
+%this = XeRayGUI();
+this = XeRayGUI('/Users/zhilianggong/Documents/MATLAB/XeRay/examples/bulk.xfluo');
+a = this;
 
-%b = a.data{1};
+%this.loadButton_Callback();
+b = this.data{1};

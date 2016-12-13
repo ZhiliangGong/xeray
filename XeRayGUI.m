@@ -6,8 +6,9 @@ classdef XeRayGUI < handle
         gui
         control
         
-        elementProfiles
         handles
+        
+        ElementProfiles
         
     end
     
@@ -15,10 +16,10 @@ classdef XeRayGUI < handle
         
         % create the GUI
         
-        function this = XeRayGUI()
+        function this = XeRayGUI(filenames)
             
             config = loadjson(fullfile(getParentDir(which('XeRay.m')), 'support-files/gui-config.json'));
-            this.elementProfiles = loadjson(fullfile(getParentDir(which('XeRay.m')), 'support-files/element-profiles.json'));
+            this.ElementProfiles = loadjson(fullfile(getParentDir(which('XeRay.m')), 'support-files/element-profiles.json'));
 
             set(0, 'units', config.units);
             pix = get(0, 'screensize');
@@ -31,6 +32,11 @@ classdef XeRayGUI < handle
             
             this.control = XeRayControl();
             this.createGUIElements();
+            this.controlRightPanelView();
+            
+            if nargin == 1
+                this.loadCellArrayDataFiles(filenames);
+            end
             
         end
         
@@ -42,8 +48,11 @@ classdef XeRayGUI < handle
             createAxes(this);
             createRightPanel(this);
             createElementEditPanel(this);
-            createUIBeforeTable(this);
-            createTableEtc(this);
+            createDataControl(this);
+            createBasicInfoTalbe(this);
+            createParametersTable(this);
+            createLayersTable(this);
+            createFittingControls(this);
             createOutputandSaveButtons(this);
             
             function createListPanel(this)
@@ -74,17 +83,17 @@ classdef XeRayGUI < handle
             function createAxes(this)
                 
                 this.gui.showError = uicontrol(handle0,'Style','checkbox','String','Show Error','Units','normalized','Visible','on',...
-                    'Position',[0.6 0.965 0.1 0.018],'CallBack',@showError_Callback);
+                    'Position',[0.6 0.965 0.1 0.018],'CallBack',@this.showError_Callback);
                 
                 this.gui.likelihoodChi2 = uicontrol(handle0,'Style','popupmenu','String',{'Likelihood','Chi^2'},'Visible','off',...
                     'Units','normalized',...
-                    'Position',[0.572 0.97 0.1 0.018],'CallBack',@likelihoodChi_Callback);
+                    'Position',[0.572 0.97 0.1 0.018],'CallBack',@this.likelihoodChi_Callback);
                 
                 this.gui.showCal = uicontrol(handle0,'Style','checkbox','String','Show Calc.','Units','normalized',...
-                    'Position',[0.6 0.437 0.08 0.018],'CallBack',@showCal_Callback);
+                    'Position',[0.6 0.437 0.08 0.018],'CallBack',@this.showCal_Callback);
                 
                 this.gui.showFit = uicontrol(handle0,'Style','checkbox','String','Show Fit','Units','normalized',...
-                    'Position',[0.54 0.437 0.06 0.018],'CallBack',@showFit_Callback);
+                    'Position',[0.54 0.437 0.06 0.018],'CallBack',@this.showFit_Callback);
                 
                 ax1 = axes('Parent',handle0,'Units','normalized','Position',[0.215 0.52 0.45 0.44]);
                 ax1.XLim = [0 10];
@@ -120,16 +129,16 @@ classdef XeRayGUI < handle
             function createElementEditPanel(this)
                 
                 elementEditPanel = this.gui.elementEditPanel;
-                elementNames = fieldnames(this.elementProfiles);
+                elementNames = fieldnames(this.ElementProfiles);
                 
                 uicontrol(elementEditPanel,'Style','text','String','Existing Elements','Units','normalized',...
                     'HorizontalAlignment','left','Position',[0.02 0.9 0.3 0.0825]);
                 
                 uicontrol(elementEditPanel,'Style','pushbutton','String','Close','Units','normalized',...
-                    'Position',[0.8 0.9 0.15 0.0825],'Callback',@closeElementTab_Callback);
+                    'Position',[0.8 0.9 0.15 0.0825],'Callback',@this.closeElementTab_Callback);
                 
                 this.gui.elementListbox = uicontrol(elementEditPanel,'Style','listbox','String', elementNames, 'Units','normalized',...
-                    'Position',[0.02 0.04 0.2 0.88],'Max',1,'CallBack',@elementListbox_Callback);
+                    'Position',[0.02 0.04 0.2 0.88],'Max',1,'CallBack',@this.elementListbox_Callback);
                 
                 uicontrol(elementEditPanel,'Style','text','String','Element Name:','Units','normalized',...
                     'HorizontalAlignment','left','Position',[0.25 0.86 0.25 0.05]);
@@ -152,103 +161,128 @@ classdef XeRayGUI < handle
                     'Units','normalized','HorizontalAlignment','left','Position',[0.25 0.28 0.65 0.15]);
                 
                 uicontrol(elementEditPanel,'Style','pushbutton','String','Add/Modify','Units','normalized',...
-                    'Position',[0.67 0.135 0.28 0.0825],'Callback',@modifyElementButton_Callback);
+                    'Position',[0.67 0.135 0.28 0.0825],'Callback',@this.modifyElementButton_Callback);
                 
                 uicontrol(elementEditPanel,'Style','pushbutton','String','Remove Element','Units','normalized',...
-                    'Position',[0.67 0.05 0.28 0.0825],'Callback',@removeElementButton_Callback);
+                    'Position',[0.67 0.05 0.28 0.0825],'Callback',@this.removeElementButton_Callback);
                 
             end
             
-            function createUIBeforeTable(this)
+            function createDataControl(this)
                 
-                elementNames = fieldnames(this.elementProfiles);
+                elementNames = fieldnames(this.ElementProfiles);
                 rightPanel = this.gui.rightPanel;
                 
                 this.gui.elementPopup = uicontrol(rightPanel,'Style','popupmenu','String',[{'Choose element...'}, elementNames', {'Add or modify...'}],'Units','normalized',...
-                    'Position',[0.01 0.96 0.43 0.03],'CallBack',@elementPopup_Callback);
+                    'Position',[0.01 0.96 0.43 0.03],'CallBack', @this.element_Callback);
                 
-                this.gui.curveType = uicontrol(rightPanel,'Style','popupmenu','String',this.control.curveTypes,'Units','normalized',...
-                    'Position',[0.5 0.96 0.43 0.03],'CallBack',@curveType_Callback);
+                this.gui.lineShape = uicontrol(rightPanel,'Style','popupmenu','String',this.control.lineShapes,'Units','normalized',...
+                    'Position',[0.5 0.96 0.43 0.03],'CallBack',@this.lineShape_Callback);
                 
-                this.gui.background = uicontrol(rightPanel,'Style','radiobutton','Enable','off','String','Subtract Background','Units','normalized',...
-                    'Position',[0.015 0.92 0.43 0.03],'CallBack',@background_Callback);
+                this.gui.removeBackground = uicontrol(rightPanel,'Style','radiobutton','String','Subtract Background','Units','normalized',...
+                    'Position',[0.015 0.925 0.43 0.03],'CallBack',@this.removeBackground_Callback);
                 
-                this.gui.startFitting = uicontrol(rightPanel,'Style','radiobutton','Enable','off','String','Start Fitting','Units','normalized',...
-                    'Position',[0.5 0.92 0.43 0.03],'CallBack',@startFitting_Callback);
-                
-                this.gui.energyText = uicontrol(rightPanel,'Style','text','String','Beam Energy (keV)','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.025 0.88 0.29 0.03]);
-                
-                this.gui.energyInput = uicontrol(rightPanel,'Style','edit','String','10.0','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.3 0.885 0.15 0.028],'CallBack',@energyInput_Callback);
-                
-                this.gui.densityText = uicontrol(rightPanel,'Style','text','String','Density (g/mL)','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.5 0.88 0.2 0.03]);
-                
-                this.gui.densityInput = uicontrol(rightPanel,'Style','edit','String','1.02','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.72 0.885 0.21 0.028],'CallBack',@densityInput_Callback);
-                
-                this.gui.slitText = uicontrol(rightPanel,'Style','text','String','Slit Size (mm)','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.5 0.845 0.2 0.03]);
-                
-                this.gui.slitInput = uicontrol(rightPanel,'Style','edit','String','0.02','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.72 0.85 0.21 0.028],'CallBack',@slitInput_Callback);
-                
-                this.gui.lengthText = uicontrol(rightPanel,'Style','text','String','Detector Foot (mm)','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.025 0.845 0.29 0.03]);
-                
-                this.gui.lengthInput = uicontrol(rightPanel,'Style','edit','String','10.76','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.3 0.85 0.15 0.028],'CallBack',@lengthInput_Callback);
-                
-                this.gui.formulaText = uicontrol(rightPanel,'Style','text','String','Chemical Formula','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.025 0.81 0.29 0.03]);
-                
-                this.gui.formulaInput = uicontrol(rightPanel,'Style','edit','String','H2OCa0.000018Cl0.000036','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.3 0.815 0.625 0.028],'CallBack',@formulaInput_Callback);
+                this.gui.startFitting = uicontrol(rightPanel,'Style','radiobutton','String','Start Fitting','Units','normalized',...
+                    'Position',[0.5 0.925 0.43 0.03],'CallBack',@this.startFitting_Callback);
                 
             end
             
-            function createTableEtc(this)
+            function createBasicInfoTalbe(this)
                 
                 rightPanel = this.gui.rightPanel;
                 
-                rowName = {'Qz Offset','Scale Factor','Bulk (mM)','Surf (1/nm^2)','Background'};
-                columnName = {'Min','Max','Start','Fix','Plot'};
-                columnFormat = {'numeric','numeric','numeric','logical','logical'};
-                columnWidth = {55 55 55 30 30};
-                tableData = {-0.001,0.001,0,false,false;1,1,1,true,false;1,1,1,true,false;0,0,0,true,false;0,0,0,true,false};
+                rowName = {'Beam Energy (keV)', 'Slit Size (mm)', 'Detector Footprint (mm)'};
+                colName = {};
+                columnFormat = {'numeric'};
+                columnWidth = {120};
+                tableData = {10; 10.76; 0.024};
                 
-                this.gui.table = uitable(rightPanel,'Data', tableData,'ColumnName', columnName,...
-                    'ColumnFormat', columnFormat,'ColumnEditable', [true true true true true],'Units','normalized',...
-                    'ColumnWidth',columnWidth,'RowName',rowName,'RowStriping','off',...
-                    'Position',[0.025 0.64 0.935 0.17],'CellEditCallBack',@table_Callback);
+                this.gui.basicInfoTable = uitable(rightPanel, 'Data', tableData, 'ColumnName', colName, ...
+                    'ColumnFormat', columnFormat, 'ColumnEditable', true, 'Units','normalized', ...
+                    'ColumnWidth',columnWidth,'RowName',rowName, 'RowStriping','off',...
+                    'Position', [0.025 0.84 0.935 0.08], 'CellEditCallBack',@this.basicInfo_Callback);
+                
+            end
+            
+            function createParametersTable(this)
+                
+                rightPanel = this.gui.rightPanel;
+                
+                rowName = {'Angle Offset','Scale Factor','Background'};
+                colName = {'Min','Max','Start','Fix','Plot'};
+                colFormat = {'numeric','numeric','numeric','logical','logical'};
+                colWidth = {55 55 55 30 30};
+                tableData = {-0.001,0.001,0,false,false; 1,1,1,true,false; 1,1,1,true,false};
+                
+                this.gui.parametersTableTitle = uicontrol(rightPanel,'Style','text','String','System Parameters:','Units','normalized','HorizontalAlignment','left',...
+                    'Position',[0.025 0.81 0.8 0.025]);
+                
+                this.gui.parametersTable = uitable(rightPanel,'Data', tableData,'ColumnName', colName,...
+                    'ColumnFormat', colFormat,'ColumnEditable', [true true true true true],'Units','normalized',...
+                    'ColumnWidth',colWidth,'RowName',rowName,'RowStriping','off',...
+                    'Position',[0.025 0.70 0.935 0.11], 'CellEditCallBack',@this.parametersTable_Callback);
+                
+            end
+            
+            function createLayersTable(this)
+                
+                rightPanel = this.gui.rightPanel;
+                
+                rowName = {'L1'};
+                colName = {'E. D.', 'Conc.', 'Formula', 'Del'};
+                colFormat = {'numeric','numeric','char', 'logical'};
+                colWidth = {40, 40, 205, 30};
+                tableData = {0.334, 50, 'H2O', false};
+                
+                this.gui.layerTableTitle = uicontrol(rightPanel,'Style','text','String','Layer Structure:','Units','normalized','HorizontalAlignment','left',...
+                    'Position',[0.025 0.67 0.8 0.025]);
+                
+                this.gui.layerTable = uitable(rightPanel,'Data', tableData,'ColumnName', colName,...
+                    'ColumnFormat', colFormat,'ColumnEditable', [true true true true true],'Units','normalized',...
+                    'ColumnWidth',colWidth,'RowName',rowName,'RowStriping','off',...
+                    'Position', [0.025 0.52 0.935 0.15], 'CellEditCallBack',@this.parametersTable_Callback);
+                
+                this.gui.addLayer = uicontrol(rightPanel,'Style','pushbutton','String', 'Add', 'Units','normalized',...
+                    'Position', [0.725 0.49 0.11 0.03]);
+                
+                this.gui.deleteLayer = uicontrol(rightPanel,'Style','pushbutton','String', 'Delete','Units','normalized',...
+                    'Position', [0.84 0.49 0.12 0.03]);
+                
+            end
+            
+            function createFittingControls(this)
+                
+                rightPanel = this.gui.rightPanel;
+                
+                this.gui.layerTableTitle = uicontrol(rightPanel,'Style','text','String', 'Fitting Control:','Units','normalized','HorizontalAlignment','left',...
+                    'Position',[0.025 0.46 0.8 0.025]);
                 
                 this.gui.loadPara = uicontrol(rightPanel,'Style','pushbutton','String','Load Para','Units','normalized',...
-                    'Position',[0.024 0.605 0.17 0.03],'CallBack',@loadPara_Callback);
+                    'Position',[0.024 0.43 0.17 0.03],'CallBack',@this.loadPara_Callback);
                 
                 this.gui.savePara = uicontrol(rightPanel,'Style','pushbutton','String','Save Para','Units','normalized',...
-                    'Position',[0.19 0.605 0.17 0.03],'CallBack',@savePara_Callback);
+                    'Position',[0.19 0.43 0.17 0.03],'CallBack',@this.savePara_Callback);
                 
                 this.gui.stepInput = uicontrol(rightPanel,'Style','edit','String',20,'Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.62 0.605 0.1 0.03]);
+                    'HorizontalAlignment','left','Position',[0.62 0.43 0.1 0.03]);
                 
                 this.gui.stepText = uicontrol(rightPanel,'Style','text','String','Steps','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.735 0.6 0.08 0.03]);
+                    'HorizontalAlignment','left','Position',[0.735 0.425 0.08 0.03]);
                 
                 this.gui.fitButton = uicontrol(rightPanel,'Style','pushbutton','String','Fit','Units','normalized',...
-                    'Position',[0.82 0.605 0.15 0.03],'CallBack',@fitButton_Callback);
+                    'Position',[0.82 0.43 0.15 0.03],'CallBack',@this.fitButton_Callback);
                 
                 this.gui.withText = uicontrol(rightPanel,'Style','text','String','With','Units','normalized','HorizontalAlignment','left',...
-                    'Position',[0.025 0.570 0.07 0.03]);
+                    'Position',[0.025 0.395 0.07 0.03]);
                 this.gui.confidenceInput = uicontrol(rightPanel,'Style','edit','String','95','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.1 0.575 0.07 0.03],'CallBack',@confidenceInput_Callback);
+                    'HorizontalAlignment','left','Position',[0.1 0.4 0.07 0.03],'CallBack',@this.confidenceInput_Callback);
                 this.gui.confidenceText = uicontrol(rightPanel,'Style','text','String','% confidence window','Units','normalized','HorizontalAlignment','left',...
-                    'Position',[0.171 0.570 0.28 0.03]);
+                    'Position',[0.171 0.395 0.28 0.03]);
                 this.gui.recordFitting = uicontrol(rightPanel,'Style','pushbutton','String','Record Fitting','Units','normalized',...
-                    'Position',[0.452 0.575 0.22 0.03],'CallBack',@recordFitting_Callback);
+                    'Position',[0.452 0.4 0.22 0.03],'CallBack',@this.recordFitting_Callback);
                 
                 this.gui.adjustPara = uicontrol(rightPanel,'Style','pushbutton','String','Adjust Para','Units','normalized',...
-                    'Position',[0.77 0.575 0.2 0.03],'CallBack',@adjustPara_Callback);
+                    'Position',[0.77 0.4 0.2 0.03],'CallBack',@this.adjustPara_Callback);
                 
             end
             
@@ -257,39 +291,138 @@ classdef XeRayGUI < handle
                 rightPanel = this.gui.rightPanel;
                 
                 this.gui.output = uicontrol(rightPanel,'Style','edit','Max',2,'HorizontalAlignment','left','Units','normalized',...
-                    'Position',[0.03 0.07 0.935 0.495]);
+                    'Position',[0.03 0.07 0.935 0.32]);
                 
                 uicontrol(rightPanel,'Style','pushbutton','String','Clear','Units','normalized',...
-                    'Position',[0.82 0.038 0.15 0.03],'CallBack',@clearButton_Callback);
+                    'Position',[0.82 0.038 0.15 0.03],'CallBack',@this.clearButton_Callback);
                 
                 uicontrol(rightPanel,'Style','text','String','Save:','Units','normalized',...
                     'HorizontalAlignment','left','Position',[0.025 0.035 0.08 0.025]);
                 
                 uicontrol(rightPanel,'Style','pushbutton','String','Output Text','Units','normalized',...
-                    'Position',[0.024 0.007 0.2 0.03],'CallBack',@saveText_Callback);
+                    'Position',[0.024 0.007 0.2 0.03],'CallBack',@this.saveText_Callback);
                 
                 uicontrol(rightPanel,'Style','pushbutton','String','Upper Figure','Units','normalized',...
-                    'Position',[0.234 0.007 0.2 0.03],'CallBack',@saveFig1_Callback);
+                    'Position',[0.234 0.007 0.2 0.03],'CallBack',@this.saveFig1_Callback);
                 
                 uicontrol(rightPanel,'Style','pushbutton','String','Lower Figure','Units','normalized',...
-                    'Position',[0.444 0.007 0.2 0.03],'CallBack',@saveFig2_Callback);
+                    'Position',[0.444 0.007 0.2 0.03],'CallBack',@this.saveFig2_Callback);
                 
                 uicontrol(rightPanel,'Style','pushbutton','String','Data Set','Units','normalized',...
-                    'Position',[0.654 0.007 0.15 0.03],'CallBack',@saveDataset_Callback);
+                    'Position',[0.654 0.007 0.15 0.03],'CallBack',@this.saveDataset_Callback);
                 
                 uicontrol(rightPanel,'Style','pushbutton','String','Data & Fit','Units','normalized',...
-                    'Position',[0.814 0.007 0.17 0.03],'CallBack',@saveDataFit_Callback);
+                    'Position',[0.814 0.007 0.17 0.03],'CallBack',@this.saveDataFit_Callback);
                 
             end
             
         end
         
-        % utility functions
+        % call back functions
+        
+        function loadButton_Callback(this, source, eventdata)
+
+            [oldFiles, newFiles] = this.loadNewData();
+            
+            if ~isempty(newFiles)
+                
+                this.gui.fileList.String = [oldFiles, newFiles];
+                
+                if isempty(oldFiles)
+                    this.updateView('file');
+                end
+                
+            end
+            
+        end
+        
+        function deleteButton_Callback(this, source, eventdata)
+
+            fileList = this.gui.fileList;
+            
+            if ~isempty(fileList.String)
+                
+                if isa(fileList.String, 'char')
+                    n = true;
+                else
+                    n = true(1, length(fileList.String));
+                end
+                m = fileList.Value;
+                n(m) = false(1, length(m));
+                this.data = this.data(n);
+                
+                this.updateView('delete', n);
+                
+            end
+            
+        end
+        
+        function fileList_Callback(this, source, eventdata)
+
+            this.updateView('file');
+            
+        end
+        
+        function angleList_Callback(this, source, eventdata)
+            
+%             if elementPopup.Value ~= 1 && elementPopup.Value ~= length(elementPopup.String) && length(scanList.Value) == 1
+%                 getAllInputs;
+%                 getCalculation;
+%             end
+            this.updateView('angle');
+            
+        end
+        
+        function showError_Callback(this, source, eventdata)
+            
+            this.updateView('error');
+            
+        end
+        
+        function element_Callback(this, source, eventdata)
+            
+            n = length(this.gui.elementPopup.String);
+            m = this.gui.elementPopup.Value;
+            switch m
+                case 1
+                    this.control.element = 'none';
+                case n
+                    this.control.element = 'new';
+                otherwise
+                    this.control.element = this.gui.elementPopup.String{this.gui.elementPopup.Value};
+                    this.fitSpectraToElement();
+            end
+            
+            this.updateView('element');
+            
+        end
+        
+        function lineShape_Callback(this, source, eventdata)
+            
+            this.control.lineShape = this.gui.lineShape.String{this.gui.lineShape.Value};
+            this.fitSpectraToElement();
+            this.updateView('lineshape');
+            
+        end
+        
+        function removeBackground_Callback(this, source, eventdata)
+            
+            this.updateView('background');
+            
+        end
+        
+        function startFitting_Callback(this, source, eventdata)
+            
+            this.updateView('start-fitting');
+            
+        end
+        
+        % models
         
         function data = getDataForElementTable(this, elementName)
             
             data = cell(3,2);
-            profile = this.elementProfiles.(elementName);
+            profile = this.ElementProfiles.(elementName);
             data{1,1} = profile.range(1);
             data{1,2} = profile.range(2);
             data{2,1} = profile.peak(1);
@@ -313,9 +446,19 @@ classdef XeRayGUI < handle
             
         end
         
-        function [oldFiles, newFiles] = loadNewData(this)
+        function [oldFiles, newFiles] = loadNewData(this, filenames)
 
-            [newFiles, path] = uigetfile('*.xfluo','Select fluorescence data files','MultiSelect','on');
+            if nargin == 2
+                n = length(filenames);
+                newFiles = cell(1, n);
+                path = fileparts(filenames{1});
+                for i = 1 : n
+                    [~, name, extension] = fileparts(filenames{i});
+                    newFiles{i} = [name, extension];
+                end
+            else
+                [newFiles, path] = uigetfile('*.xfluo','Select fluorescence data files', 'MultiSelect', 'on');
+            end
             
             if ~isa(newFiles,'numeric') %got files
                 
@@ -400,6 +543,26 @@ classdef XeRayGUI < handle
             
         end
         
+        function [fileIndex, angleIndices] = getSelectedSignalIndices(this)
+            
+            [n, m, ~, ~] = this.getSelectionIndex();
+            
+            n1 = n;
+            n1(2:end) = n1(2:end)-n1(1:end-1);
+            ind = find(n1~=0);
+            
+            fileIndex = zeros(size(ind));
+            angleIndices = cell(size(ind));
+            
+            for i = 1:length(ind)-1
+                fileIndex(i) = n(ind(i));
+                angleIndices{i} = m(ind(i):ind(i+1)-1);
+            end
+            fileIndex(end) = n(ind(end));
+            angleIndices{end} = m(ind(end):end);
+            
+        end
+        
         function [styles1, legends1, styles2, legends2] = getSpectraStylesAndLegends(this)
 
             
@@ -431,23 +594,322 @@ classdef XeRayGUI < handle
             
         end
         
+        function fitSpectraToElement(this)
+            
+            element = this.gui.elementPopup.String{this.gui.elementPopup.Value};
+            lineShape = this.gui.lineShape.String{this.gui.lineShape.Value};
+            
+            for i = 1 : length(this.data)
+                
+                this.data{i}.selectElement(element, lineShape);
+                
+            end
+            
+        end
+        
+        function lengths = dataLengths(this, indices)
+            
+            if ~isempty(this.data)
+                if nargin == 1
+                    indices = 1 : length(this.data);
+                elseif max(indices) > length(this.data)
+                    warning('Indices cannot be larger than the number of datasets.');
+                end
+                n = length(indices);
+                lengths = zeros(1, n);
+                for i = 1 : n
+                    lengths(i) = length(this.data{indices(1)}.rawdata.angle);
+                end
+            else
+                lengths = 0;
+                disp('No data.');
+            end
+            
+        end
+        
+        function loadCellArrayDataFiles(this, filenames)
+            
+            flag = 1;
+            if ischar(filenames)
+                filenames = {filenames};
+            end
+            for i = 1 : length(filenames)
+                if ~exist(filenames{i}, 'file')
+                    Warning('Cannot find this file: %s', filenames{i});
+                    flag = 0;
+                    break;
+                end
+            end
+            
+            if flag == 1
+                [oldFiles, newFiles] = this.loadNewData(filenames);
+                if ~isempty(newFiles)
+                    
+                    this.gui.fileList.String = [oldFiles, newFiles];
+                    
+                    if isempty(oldFiles)
+                        this.updateView('file');
+                    end
+                    
+                end
+            end
+            
+            
+            
+        end
+        
+        % view controller
+        
+        function updateView(this, trigger, varargin)
+            
+            switch trigger
+                case 'file'
+                    this.displayAngles();
+                    this.replot();
+                case 'angle'
+                    this.replot();
+                case 'delete'
+                    indices = varargin{1};
+                    fileList = this.gui.fileList;
+                    angleList = this.gui.angleList;
+                    if sum(indices)
+                        fileList.String = fileList.String(indices);
+                        fileList.Value = 1;
+                        angleList.Value = 1;
+                        this.displayAngles();
+                    else
+                        fileList.Value = 1;
+                        fileList.String = {};
+                        angleList.String = {};
+                        this.emptyFigures();
+                    end
+                case 'error'
+                    this.replot();
+                case 'element'
+                    element = this.control.element;
+                    this.controlRightPanelView();
+                    switch element
+                        case 'none'
+                            this.replot();
+                        case 'new'
+                            
+                        otherwise
+                            this.replot();
+                    end
+                case 'lineshape'
+                    this.replot();
+                case 'background'
+                    this.replot();
+                case 'start-fitting'
+                    this.controlRightPanelView();
+            end
+            
+        end
+        
+        function replot(this)
+            
+            switch this.control.element
+                case 'none'
+                    switch this.gui.showError.Value
+                        case 0
+                            this.plotWholeSpectraWithoutError();
+                        case 1
+                            this.plotWholeSpectraWithError();
+                    end
+                case 'new'
+                    % do nothing
+                otherwise
+                    this.plotSignal();
+                    switch this.gui.showError.Value
+                        case 0
+                            this.plotElementSpectraWithoutError();
+                        case 1
+                            this.plotElementSpectraWithError();
+                    end
+            end
+            
+        end
+        
         % plot functions
         
         function plotWholeSpectraWithoutError(this)
             
             [n, m, ~, ~] = this.getSelectionIndex();
-            [styles1, legends1, ~, ~] = this.getSpectraStylesAndLegends();
+            [styles, legends, ~, ~] = this.getSpectraStylesAndLegends();
+            
+            hold(this.gui.ax1, 'off');
             
             for i = 1 : length(this.gui.angleList.Value)
-                plot(this.gui.ax1, this.data{n(i)}.rawdata.energy, this.data{i}.rawdata.intensity(:, m(i)), styles1{i});
-                hold('on');
+                xdata = this.data{n(i)}.rawdata.energy;
+                ydata = this.data{n(i)}.rawdata.intensity(:, m(i));
+                plot(this.gui.ax1, xdata, ydata, styles{i});
+                if i == 1
+                    hold(this.gui.ax1, 'on');
+                end
             end
             
-            legend(this.gui.ax1, legends1);
+            set(this.gui.ax1, 'xlim', [min(this.data{this.gui.fileList.Value(1)}.rawdata.energy), max(this.data{this.gui.fileList.Value(1)}.rawdata.energy)]);
+            
+            legend(this.gui.ax1, legends);
+            title('Whole Spectra')
             xlabel(this.gui.ax1, 'Energy (keV)');
             ylabel(this.gui.ax1, 'Signal');
             
-            hold('off');
+            hold(this.gui.ax1, 'off');
+            
+        end
+        
+        function plotWholeSpectraWithError(this)
+            
+            [n, m, ~, ~] = this.getSelectionIndex();
+            [styles, legends, ~, ~] = this.getSpectraStylesAndLegends();
+            
+            hold(this.gui.ax1, 'off');
+            
+            for i = 1 : length(this.gui.angleList.Value)
+                xdata = this.data{n(i)}.rawdata.energy;
+                ydata = this.data{n(i)}.rawdata.intensity(:, m(i));
+                yerror = this.data{n(i)}.rawdata.intensityError(:, m(i));
+                errorbar(this.gui.ax1, xdata, ydata, yerror, styles{i});
+                if i == 1
+                    hold(this.gui.ax1, 'on');
+                end
+            end
+            
+            set(this.gui.ax1, 'xlim', [min(this.data{this.gui.fileList.Value(1)}.rawdata.energy), max(this.data{this.gui.fileList.Value(1)}.rawdata.energy)]);
+            
+            legend(this.gui.ax1, legends);
+            xlabel(this.gui.ax1, 'Energy (keV)');
+            ylabel(this.gui.ax1, 'Signal');
+            
+            hold(this.gui.ax1, 'off');
+            
+        end
+        
+        function plotElementSpectraWithoutError(this)
+            
+            [n, m, ~, ~] = this.getSelectionIndex();
+            [styles, legends, ~, ~] = this.getSpectraStylesAndLegends();
+            
+            hold(this.gui.ax1, 'off');
+            
+            switch this.gui.removeBackground.Value
+                case 0
+                    marker = 'intensity';
+                case 1
+                    marker = 'netIntensity';
+            end
+            
+            for i = 1 : length(this.gui.angleList.Value)
+                xdata = this.data{n(i)}.data.energy;
+                ydata = this.data{n(i)}.data.(marker)(:, m(i));
+                plot(this.gui.ax1, xdata, ydata, styles{i});
+                if i == 1
+                    hold(this.gui.ax1, 'on');
+                end
+            end
+            
+            legend(this.gui.ax1, legends);
+            title(sprintf('%s %s', this.control.element, 'Spectra'));
+            xlabel(this.gui.ax1, 'Energy (keV)');
+            ylabel(this.gui.ax1, 'Signal');
+            
+            for i = length(this.gui.angleList.Value)
+                xdata = this.data{n(i)}.data.lineshape.energy;
+                ydata = this.data{n(i)}.data.lineshape.(marker)(:, m(i));
+                plot(this.gui.ax1, xdata, ydata, styles{i}(2));
+            end
+            
+            hold(this.gui.ax1, 'off');
+            
+        end
+        
+        function plotElementSpectraWithError(this)
+            
+            [n, m, ~, ~] = this.getSelectionIndex();
+            [styles, legends, ~, ~] = this.getSpectraStylesAndLegends();
+            
+            hold(this.gui.ax1, 'off');
+            
+            switch this.gui.removeBackground.Value
+                case 0
+                    marker = 'intensity';
+                case 1
+                    marker = 'netIntensity';
+            end
+            
+            for i = 1 : length(this.gui.angleList.Value)
+                xdata = this.data{n(i)}.data.energy;
+                ydata = this.data{n(i)}.data.(marker)(:, m(i));
+                yerror = this.data{n(i)}.data.intensityError(:, m(i));
+                errorbar(this.gui.ax1, xdata, ydata, yerror, styles{i});
+                if i == 1
+                    hold(this.gui.ax1, 'on');
+                end
+            end
+                    
+            legend(this.gui.ax1, legends);
+            title(sprintf('%s %s', this.control.element, 'Spectra'));
+            xlabel(this.gui.ax1, 'Energy (keV)');
+            ylabel(this.gui.ax1, 'Signal');
+            
+            for i = length(this.gui.angleList.Value)
+                xdata = this.data{n(i)}.data.lineshape.energy;
+                ydata = this.data{n(i)}.data.lineshape.(marker)(:, m(i));
+                plot(this.gui.ax1, xdata, ydata, styles{i}(2));
+            end
+            
+            hold(this.gui.ax1, 'off');
+            
+        end
+        
+        function plotSignal(this)
+            
+            [~, ~, styles, legends] = this.getSpectraStylesAndLegends();
+            [n, m] = this.getSelectedSignalIndices();
+            
+            sel = true(size(n));
+            
+            hold(this.gui.ax2, 'off');
+            
+            for i = 1:length(n)
+                if isempty(m{i})
+                    sel(i) = false;
+                end
+                xdata = this.data{n(i)}.data.angle(m{i});
+                ydata = this.data{n(i)}.data.lineshape.signal(m{i});
+                yerror = this.data{n(i)}.data.lineshape.signalError(m{i});
+                errorbar(this.gui.ax2, xdata, ydata, yerror, styles{i}, 'markersize', 8, 'linewidth', 2);
+                if i == 1
+                   hold(this.gui.ax2, 'on'); 
+                end
+            end
+            
+            selectedLegends = legends(sel);
+            
+%             if withCalculation
+%                 n = scanList.Value(1);
+%                 if isempty(x{n}.calculation)
+%                     getAllInputs;
+%                     getCalculation;
+%                 end
+%                 plot(ax,x{n}.calRange,x{n}.calculation,'g-','linewidth',2);
+%                 hold(ax,'on');
+%                 theLegend = [theLegend,{'Calculation'}];
+%             end
+%             
+%             if withFit
+%                 n = scanList.Value(1);
+%                 plot(ax,x{n}.fluoFit.fitAll.fitQRange,x{n}.fluoFit.fitAll.fitSignal,'r-','linewidth',2);
+%                 hold(ax,'on');
+%                 theLegend = [theLegend,{'Fit'}];
+%             end
+            
+            xlabel(this.gui.ax2, 'Angle (radians)');
+            ylabel(this.gui.ax2, 'Fluorescence Intensity (a.u.)');
+            title(this.gui.ax2, sprintf('%s %s', this.control.element, 'Fluorescence'));
+            legend(this.gui.ax2, selectedLegends);
+            hold(this.gui.ax2, 'off');
             
         end
         
@@ -486,111 +948,25 @@ classdef XeRayGUI < handle
             
         end
         
-        function lengths = dataLengths(this, indices)
+        function controlRightPanelView(this)
             
-            if ~isempty(this.data)
-                if nargin == 1
-                    indices = 1 : length(this.data);
-                elseif max(indices) > length(this.data)
-                    warning('Indices cannot be larger than the number of datasets.');
-                end
-                n = length(indices);
-                lengths = zeros(1, n);
-                for i = 1 : n
-                    lengths(i) = length(this.data{indices(1)}.rawdata.angle);
-                end
-            else
-                lengths = 0;
-                disp('No data.');
-            end
-            
-        end
-        
-        % call back functions
-        
-        function loadButton_Callback(this, source, eventdata)
-
-            [oldFiles, newFiles] = this.loadNewData();
-            
-            if ~isempty(newFiles)
-                
-                this.gui.fileList.String = [oldFiles, newFiles];
-                
-                if isempty(oldFiles)
-                    this.updateView('file');
-                end
-                
-            end
-            
-        end
-        
-        function deleteButton_Callback(this, source, eventdata)
-
-            fileList = this.gui.fileList;
-            
-            if ~isempty(fileList.String)
-                
-                if isa(fileList.String, 'char')
-                    n = true;
-                else
-                    n = true(1, length(fileList.String));
-                end
-                m = fileList.Value;
-                n(m) = false(1, length(m));
-                this.data = this.data(n);
-                
-                this.updateView('delete', n);
-                
-            end
-            
-        end
-        
-        function fileList_Callback(this, source, eventdata)
-
-            this.updateView('file');
-            
-        end
-        
-        function angleList_Callback(this, source, eventdata)
-            
-%             if elementPopup.Value ~= 1 && elementPopup.Value ~= length(elementPopup.String) && length(scanList.Value) == 1
-%                 getAllInputs;
-%                 getCalculation;
-%             end
-            this.updateView('angle');
-            
-        end
-        
-        % view controller
-        
-        function updateView(this, trigger, varargin)
-            
-            switch trigger
-                case 'file'
-                    this.displayAngles();
-                    switch this.control.element
-                        case 'none'
-                            this.plotWholeSpectraWithoutError();
-                    end
-                case 'angle'
-                    switch this.control.element
-                        case 'none'
-                            this.plotWholeSpectraWithoutError();
-                    end
-                case 'delete'
-                    indices = varargin{1};
-                    fileList = this.gui.fileList;
-                    angleList = this.gui.angleList;
-                    if sum(indices)
-                        fileList.String = fileList.String(indices);
-                        fileList.Value = 1;
-                        angleList.Value = 1;
-                        this.displayAngles();
-                    else
-                        fileList.Value = 1;
-                        fileList.String = {};
-                        angleList.String = {};
-                        this.emptyFigures();
+            n = length(this.gui.elementPopup.String);
+            m = this.gui.elementPopup.Value;
+            switch m
+                case 1
+                    set(findall(this.gui.rightPanel, '-property', 'Enable'), 'Enable', 'off');
+                    this.gui.elementPopup.Enable = 'on';
+                case n
+                otherwise
+                    switch this.gui.startFitting.Value
+                        case 0
+                            set(findall(this.gui.rightPanel, '-property', 'Enable'), 'Enable', 'off');
+                            this.gui.lineShape.Enable = 'on';
+                            this.gui.startFitting.Enable = 'on';
+                            this.gui.removeBackground.Enable = 'on';
+                            this.gui.elementPopup.Enable = 'on';
+                        case 1
+                            set(findall(this.gui.rightPanel, '-property', 'Enable'), 'Enable', 'on');
                     end
             end
             

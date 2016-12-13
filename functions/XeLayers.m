@@ -32,7 +32,7 @@ classdef XeLayers < handle
             if nargin == 2
                 lineshape = 'Gaussian';
             end
-            this.data = XeElementData(this.config, element, this.rawdata, lineshape);
+            this.data = XeElementData(element, this.rawdata, lineshape);
             
         end
         

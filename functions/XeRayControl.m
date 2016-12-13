@@ -3,8 +3,8 @@ classdef XeRayControl
     properties
         
         element
-        curveTypes
-        curveType
+        lineShapes
+        lineShape
         plot
         colors
         symbols
@@ -16,8 +16,8 @@ classdef XeRayControl
         function this = XeRayControl()
             
             this.element = 'none';
-            this.curveTypes = {'Gaussian','Lorentzian'};
-            this.curveType = this.curveTypes{1};
+            this.lineShapes = {'Gaussian','Lorentzian'};
+            this.lineShape = this.lineShapes{1};
             
             %initial plot control
             this.plot.element = 0;
