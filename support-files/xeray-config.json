@@ -1,0 +1,5 @@
+{
+  "units": "pixels",
+  "window": [335, 300, 1250, 800],
+  "ScatteringFactorFolder": "atomic-scattering-factor"
+}

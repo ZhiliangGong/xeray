@@ -9,20 +9,17 @@ classdef XeLayers < handle
         data
         fit
 
-        config
+        ScatteringFactorFolder
 
     end
 
     methods
 
         % construct an instance, and load the supporting database
-        function this = XeLayers(file)
-
-            this.config = textread(which('xeray-config.txt'), '%s', 'delimiter', '\n');
+        function this = XeLayers(file, folder)
 
             this.rawdata = XeRawData(file);
-            
-            %this.fit = XeFitting();
+            this.ScatteringFactorFolder = folder;
 
         end
 
@@ -39,7 +36,7 @@ classdef XeLayers < handle
         function createPhysicalSystem(this, incidenceEnergy, slit, foot)
             
             emissionEnergy = this.data.lineshape.mainPeak;
-            this.system = XeSystem(incidenceEnergy, emissionEnergy, slit, foot, this.rawdata.angle, this.config);
+            this.system = XeSystem(incidenceEnergy, emissionEnergy, slit, foot, this.rawdata.angle, this.ScatteringFactorFolder);
             
         end
         

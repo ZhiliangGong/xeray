@@ -7,20 +7,19 @@ classdef XeRefraction < handle
         dispersion
         absorption
         
-        config
-        
+        ScatteringFactorFolder
         ScatteringFactorTable
         
     end
     
     methods
         
-        function this = XeRefraction(config, energy)
+        function this = XeRefraction(scatteringFactorFolder, energy)
             
-            this.config = config;
+            this.ScatteringFactorFolder = scatteringFactorFolder;
             this.energy = energy;
             this.getWavelength();
-            this.generateScatteringFactorTables;
+            this.generateScatteringFactorTables();
             
         end
         
@@ -118,7 +117,7 @@ classdef XeRefraction < handle
         
         function generateScatteringFactorTables(this)
 
-            folder = this.config{4};
+            folder = this.ScatteringFactorFolder;
             files = dir(folder);
             files = files(3:end);
 
@@ -126,7 +125,7 @@ classdef XeRefraction < handle
             expression = '\.nff$';
             for i = 1:length(files)
                 if ~isempty(regexp(files(i).name, expression, 'once'))
-                    fid = fopen(strcat(folder, files(i).name));
+                    fid = fopen(fullfile(folder, files(i).name));
                     fgetl(fid);
                     filedata = textscan(fid, '%f %f %f');
                     fclose(fid);

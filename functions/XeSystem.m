@@ -23,14 +23,14 @@ classdef XeSystem < handle
     
     methods
         
-        function this = XeSystem(incidenceEnergy, emissionEnergy, slit, foot, angle, config)
+        function this = XeSystem(incidenceEnergy, emissionEnergy, slit, foot, angle, ScatteringFactorFolder)
             
             this.slit = slit;
             this.foot = foot;
             this.angle = angle;
             this.offset = 0;
-            this.incidence = XeRefraction(config, incidenceEnergy);
-            this.emission = XeRefraction(config, emissionEnergy);
+            this.incidence = XeRefraction(ScatteringFactorFolder, incidenceEnergy);
+            this.emission = XeRefraction(ScatteringFactorFolder, emissionEnergy);
             this.chemical = ChemicalFormula();
             
         end
@@ -349,7 +349,9 @@ classdef XeSystem < handle
                 this.updateOffset(P(1));
             end
             
-            this.concentration(P(5)) = P(4);
+            if P(5) ~= 0
+                this.concentration(P(5)) = P(4);
+            end
             
             intensity = sum(repmat(this.concentration, length(this.offsetAngle()), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
             
@@ -361,7 +363,9 @@ classdef XeSystem < handle
                 this.updateOffset(P(1));
             end
             
-            this.concentration(P(5)) = P(4);
+            if P(5) ~= 0
+                this.concentration(P(5)) = P(4);
+            end
             
             intensity = sum(repmat(this.concentration, length(angles), 1) .* this.getLayerIntegratedIntensityForAngles(angles), 2)' * P(2) + P(3);
             
@@ -371,7 +375,6 @@ classdef XeSystem < handle
             
             % parameters: parameters being fitted, with the last one being
             % the layer index
-            
             fixed = (lower == upper);
             P = zeros(1, 5);
             P(fixed) = lower(fixed);

@@ -1,7 +1,9 @@
+clear;
 clc;
 close all;
 %this = XeRayGUI();
-this = XeRayGUI('/Users/zhilianggong/Documents/MATLAB/XeRay/examples/bulk.xfluo');
+files = {'/Users/zhilianggong/Documents/MATLAB/XeRay/examples/bulk.xfluo', '/Users/zhilianggong/Documents/MATLAB/XeRay/examples/surf.xfluo'};
+this = XeRayGUI(files);
 a = this;
 
 %this.loadButton_Callback();
