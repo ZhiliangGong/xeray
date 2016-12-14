@@ -419,8 +419,49 @@ classdef XeRayGUI < handle
             
             this.gui.fileList.Value = min(this.gui.fileList.Value);
             this.updateView('start-fitting');
+            this.processGuiInputs();
             
         end
+        
+        function showCal_Callback(this, source, eventdata)
+            
+            this.updateView('calculate');
+            
+        end
+        
+        % inputs
+        
+        function addLayer_Callback(this, source, eventdata)
+            
+            layerData = this.gui.layerTable.Data;
+            [n, m] = size(layerData);
+            
+            newData = cell(n+1, m);
+            newData(2:n+1, :) = layerData;
+            newData(1, :) = {'H2O', 0.334, 1, 0, false, false};
+            
+            rowName = cell(1, n+1);
+            for i = 1 : n+1
+                rowName{i} = num2str(i);
+            end
+            
+            this.gui.layerTable.Data = newData;
+            this.gui.layerTable.RowName = rowName;
+            
+            this.processGuiInputs();
+            this.updateView('calculate');
+            
+        end
+        
+        function deleteLayers_Callback(this, source, eventdata)
+            
+            this.updateView('delete-layers');
+            this.processGuiInputs();
+            this.updateView('calculate');
+        
+        end
+        
+        % three tables
         
         function basicInfo_Callback(this, source, eventdata)
             
@@ -431,13 +472,10 @@ classdef XeRayGUI < handle
             
             if isnan(table.Data{ind(1), ind(2)})
                 table.Data{ind(1), ind(2)} = olddata;
+            else
+                this.processGuiInputs();
+                this.updateView('calculate');
             end
-            
-        end
-        
-        function showCal_Callback(this, source, eventdata)
-            
-            this.updateView('calculated');
             
         end
         
@@ -494,31 +532,9 @@ classdef XeRayGUI < handle
                     end
             end
             
-        end
-        
-        function addLayer_Callback(this, source, eventdata)
+            this.processGuiInputs();
+            this.updateView('calculate');
             
-            layerData = this.gui.layerTable.Data;
-            [n, m] = size(layerData);
-            
-            newData = cell(n+1, m);
-            newData(2:n+1, :) = layerData;
-            newData(1, :) = {'H2O', 0.334, 1, 0, false, false};
-            
-            rowName = cell(1, n+1);
-            for i = 1 : n+1
-                rowName{i} = num2str(i);
-            end
-            
-            this.gui.layerTable.Data = newData;
-            this.gui.layerTable.RowName = rowName;
-            
-        end
-        
-        function deleteLayers_Callback(this, source, eventdata)
-            
-            this.updateView('delete-layers');
-        
         end
         
         function parametersTable_Callback(this, source, eventdata)
@@ -568,6 +584,9 @@ classdef XeRayGUI < handle
             if ind(1) == 4
                 this.matchParameterToLayer();
             end
+            
+            this.processGuiInputs();
+            this.updateView('calculate');
             
         end
         
@@ -948,7 +967,7 @@ classdef XeRayGUI < handle
                 case 'delete-layers'
                     this.deleteLayers();
                     this.matchLayerToParameter();
-                case 'calculated'
+                case 'calculate'
                     this.replot();
             end
             
@@ -1194,12 +1213,9 @@ classdef XeRayGUI < handle
             end
             
             calculated = dataset.system.calculateFluoIntensityCurve(starts, fineAngleRange);
-            
-            if length(angles) == 1
-                plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2);
-            else
-                plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2);
-            end
+            plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2);
+            legends = [ax.Legend.String, {'calculation'}];
+            legend(ax, legends);
             
         end
         

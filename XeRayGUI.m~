@@ -419,6 +419,7 @@ classdef XeRayGUI < handle
             
             this.gui.fileList.Value = min(this.gui.fileList.Value);
             this.updateView('start-fitting');
+            this.processGuiInputs();
             
         end
         
@@ -431,13 +432,14 @@ classdef XeRayGUI < handle
             
             if isnan(table.Data{ind(1), ind(2)})
                 table.Data{ind(1), ind(2)} = olddata;
+            else
+                this.processGuiInputs();
             end
             
         end
         
         function showCal_Callback(this, source, eventdata)
             
-            this.processGuiConfig
             this.updateView('calculated');
             
         end
@@ -495,6 +497,8 @@ classdef XeRayGUI < handle
                     end
             end
             
+            this.processGuiInputs();
+            
         end
         
         function addLayer_Callback(this, source, eventdata)
@@ -513,6 +517,7 @@ classdef XeRayGUI < handle
             
             this.gui.layerTable.Data = newData;
             this.gui.layerTable.RowName = rowName;
+            
             
         end
         
@@ -1195,12 +1200,7 @@ classdef XeRayGUI < handle
             end
             
             calculated = dataset.system.calculateFluoIntensityCurve(starts, fineAngleRange);
-            
-            if length(angles) == 1
-                plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2);
-            else
-                plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2);
-            end
+            plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2); 
             
         end
         
