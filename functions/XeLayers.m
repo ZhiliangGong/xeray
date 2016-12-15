@@ -40,12 +40,13 @@ classdef XeLayers < handle
             
         end
         
-        function runFluoFit(this, concentration, varargin)
+        function runFluoFit(this, concentration)
             
-            if ~isempty(concentration)
-                this.system.concentration = concentration;
+            if nargin == 2
+                if ~isempty(concentration)
+                    this.system.concentration = concentration;
+                end
             end
-            this.fit = XeFitting(varargin{:});
             
             signal = this.data.lineshape.signal;
             signalError = this.data.lineshape.signalError;

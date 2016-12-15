@@ -33,6 +33,14 @@ classdef XeFitting < handle
             
         end
         
+        function updateBounds(this, lower, upper, steps)
+            
+            this.lower = lower;
+            this.upper = upper;
+            this.steps = steps;
+            
+        end
+        
         function paras = fitParameters(this)
              
             paras = this.parameters(this.varied);

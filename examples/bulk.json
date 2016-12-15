@@ -1,0 +1,13 @@
+{
+  "beamEnergy": 10,
+  "slitSize": 0.024,
+  "detectorFootprint": 10.76,
+  "layerTalbe": [
+    {
+      "formula": "H2O",
+      "ed": 0.334,
+      "depth": "Inf",
+      "concentration": 50
+    }
+  ]
+}

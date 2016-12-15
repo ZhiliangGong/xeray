@@ -79,6 +79,10 @@ classdef XeSystem < handle
         
         function pop(this, indices)
             
+            if nargin == 1
+                indices = 1 : this.N;
+            end
+            
             if max(indices) > this.N
                 warning('The layer #%d does not exist.', max(indices));
             else
@@ -100,7 +104,7 @@ classdef XeSystem < handle
         
         function insert(this, position, varargin)
             
-            if ~isempty(this.N) && position > this.N
+            if (~isempty(this.N)) && (this.N ~= 0) && (position > this.N)
                 warning('The insertion position must be within the current number of layers.')
             else
                 this.N = this.N + 1;
