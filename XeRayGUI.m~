@@ -88,7 +88,7 @@ classdef XeRayGUI < handle
                 
                 this.gui.likelihoodChi2 = uicontrol(handle0,'Style','popupmenu','String',{'Likelihood','Chi^2'},'Visible','off',...
                     'Units','normalized',...
-                    'Position',[0.572 0.97 0.1 0.018],'CallBack',@this.LikelihoodChi_Callback);
+                    'Position',[0.572 0.97 0.1 0.018],'CallBack',@this.LikelihoodChi2_Callback);
                 
                 this.gui.showCal = uicontrol(handle0,'Style','checkbox','String','Show Calc.','Units','normalized',...
                     'Position',[0.6 0.437 0.08 0.018],'CallBack',@this.ShowCal_Callback);
@@ -393,6 +393,16 @@ classdef XeRayGUI < handle
                 case 'fit-quality'
                     this.dynamicOnOffControl();
                     this.replot('upper');
+                case 'likelihood-chi2'
+                    this.replot('upper');
+                case 'show-fit'
+                    this.replot('lower');
+                case 'fit'
+                    this.dynamicOnOffControl();
+                    this.gui.showFit.Value = true;
+                    this.replot('lower');
+                otherwise
+                    warning('Case not fonund for XeRayGUI.updateView().');
             end
             
         end
@@ -405,78 +415,95 @@ classdef XeRayGUI < handle
             
             switch what
                 case 'upper'
-                    switch this.control.element
-                        case 'none'
-                            switch this.gui.showError.Value
-                                case 0
-                                    this.plotWholeSpectraWithoutError();
-                                case 1
-                                    this.plotWholeSpectraWithError();
-                            end
-                        case 'new'
-                            % do nothing
-                        otherwise
-                            switch this.chosenPlotPara()
-                                case 0
-                                    switch this.gui.showError.Value
-                                        case 0
-                                            this.plotElementSpectraWithoutError();
-                                        case 1
-                                            this.plotElementSpectraWithError();
-                                    end
-                                case 1
-                                    disp('julian');
-                                    this.plotOneLikelihood();
-                                case 2
-                            end
-                    end
+                    upperPlot(this);
                 case 'lower'
-                    switch this.control.element
-                        case 'none'
-                            this.emptyFigures(2);
-                        case 'new'
-                            % do nothing
-                        otherwise
-                            switch this.gui.showCal.Value
-                                case 0
-                                    this.plotSignal();
-                                case 1
-                                    this.plotSignal();
-                                    this.plotCalculation();
-                            end
-                    end
+                    lowerPlot(this);
                 case 'both'
-                    switch this.control.element
-                        case 'none'
-                            this.emptyFigures(2);
-                            switch this.gui.showError.Value
-                                case 0
-                                    this.plotWholeSpectraWithoutError();
-                                case 1
-                                    this.plotWholeSpectraWithError();
-                            end
-                        case 'new'
-                            % do nothing
-                        otherwise
-                            switch this.gui.showError.Value
-                                case 0
-                                    this.plotElementSpectraWithoutError();
-                                case 1
-                                    this.plotElementSpectraWithError();
-                            end
-                            switch this.gui.showCal.Value
-                                case 0
-                                    this.plotSignal();
-                                case 1
-                                    this.plotSignal();
-                                    this.plotCalculation();
-                            end
-                    end
+                    upperPlot(this);
+                    lowerPlot(this);
                 otherwise
                     warning('Case not found for XeRayGui.replot()');
             end
             
-            function upperPlot()
+            function upperPlot(this)
+                
+                switch this.control.element
+                    case 'none'
+                        switch this.gui.showError.Value
+                            case 0
+                                this.plotWholeSpectraWithoutError();
+                            case 1
+                                this.plotWholeSpectraWithError();
+                        end
+                    case 'new'
+                        % do nothing
+                    otherwise
+                        switch this.chosenPlotPara()
+                            case 0
+                                switch this.gui.showError.Value
+                                    case 0
+                                        this.plotElementSpectraWithoutError();
+                                    case 1
+                                        this.plotElementSpectraWithError();
+                                end
+                            case 1
+                                switch this.gui.likelihoodChi2.Value
+                                    case 1
+                                        this.plotOneLikelihood();
+                                    case 2
+                                        this.plotOneChi2();
+                                end
+                            case 2
+                                
+                        end
+                end
+                
+            end
+            
+            function lowerPlot(this)
+                
+                ax = this.gui.ax2;
+                
+                switch this.control.element
+                    case 'none'
+                        this.emptyFigures(2);
+                    case 'new'
+                        % do nothing
+                    otherwise
+                        switch this.gui.showCal.Value
+                            case 0
+                                switch this.gui.showFit.Value
+                                    case 0
+                                        this.plotSignal();
+                                    case 1
+                                        this.plotSignal();
+                                        hold(ax, 'on');
+                                        this.plotFit();
+                                        legends = [ax.Legend.String, {'Fit'}];
+                                        legend(ax, legends);
+                                        hold(ax, 'off');
+                                end
+                            case 1
+                                switch this.gui.showFit.Value
+                                    case 0
+                                        this.plotSignal();
+                                        hold(ax, 'on');
+                                        this.plotCalculation();
+                                        legends = [ax.Legend.String, {'Calculation'}];
+                                        legend(ax, legends);
+                                        hold(ax, 'off');
+                                    case 1
+                                        this.plotSignal();
+                                        hold(ax, 'on');
+                                        this.plotCalculation();
+                                        this.plotFit();
+                                        legends = [ax.Legend.String, {'Calculation', 'Fit'}];
+                                        legend(ax, legends);
+                                        hold(ax, 'off');
+                                end
+                        end
+                end
+                
             end
             
         end
@@ -898,6 +925,20 @@ classdef XeRayGUI < handle
                 catch
                 end
             end
+            
+            this.updateView('fit');
+            
+        end
+        
+        function LikelihoodChi2_Callback(this, source, eventdata)
+            
+            this.updateView('likelihood-chi2');
+            
+        end
+        
+        function ShowFit_Callback(this, source, eventdata)
+            
+            this.updateView('show-fit');
             
         end
         
@@ -1758,24 +1799,6 @@ classdef XeRayGUI < handle
             
             selectedLegends = legends(sel);
             
-%             if withCalculation
-%                 n = scanList.Value(1);
-%                 if isempty(x{n}.calculation)
-%                     getAllInputs;
-%                     getCalculation;
-%                 end
-%                 plot(ax,x{n}.calRange,x{n}.calculation,'g-','linewidth',2);
-%                 hold(ax,'on');
-%                 theLegend = [theLegend,{'Calculation'}];
-%             end
-%             
-%             if withFit
-%                 n = scanList.Value(1);
-%                 plot(ax,x{n}.fluoFit.fitAll.fitQRange,x{n}.fluoFit.fitAll.fitSignal,'r-','linewidth',2);
-%                 hold(ax,'on');
-%                 theLegend = [theLegend,{'Fit'}];
-%             end
-            
             xlabel(this.gui.ax2, 'Angle (radians)');
             ylabel(this.gui.ax2, 'Fluorescence Intensity (a.u.)');
             title(this.gui.ax2, sprintf('%s %s', this.control.element, 'Fluorescence'));
@@ -1792,7 +1815,6 @@ classdef XeRayGUI < handle
             angles = dataset.rawdata.angle(this.gui.angleList.Value);
             
             ax = this.gui.ax2;
-            hold(ax, 'on');
             
             if length(angles) == 1
                 fineAngleRange = linspace(angles * 0.99, angles * 1.01, 2);
@@ -1801,9 +1823,7 @@ classdef XeRayGUI < handle
             end
             
             calculated = dataset.system.calculateFluoIntensityCurve(starts, fineAngleRange);
-            plot(ax, fineAngleRange, calculated, 'r-', 'linewidth', 2);
-            legends = [ax.Legend.String, {'calculation'}];
-            legend(ax, legends);
+            plot(ax, fineAngleRange, calculated, '-', 'linewidth', 2);
             
         end
         
@@ -1815,18 +1835,61 @@ classdef XeRayGUI < handle
             
             xdata = dataset.fit.one.para(:, n);
             ydata = dataset.fit.one.likelihood(:, n);
+            plot(ax, xdata, ydata, 'o', 'linewidth', 2);
             
-            plot(ax, xdata, ydata, 'or', 'linewidth', 2);
+            hold(ax, 'on');
+            
+            xdata = dataset.fit.one.likelihoodPara(:, n);
+            ydata = dataset.fit.one.likelihoodCurve(:, n);
+            plot(ax, xdata, ydata, '-', 'linewidth', 2)
+            
+            hold(ax, 'off');
+            
+            legend(ax, {'Likelihood', 'Gaussian Fit'});
+            xlabel(ax, dataset.fit.one.parameters{n});
+            ylabel(ax, 'Likelihood');
+            title(ax, 'Gaussian Likelihood Fit');
             
         end
         
         function plotTwoLikelihood(this)
+            
+            
+            
         end
         
         function plotOneChi2(this)
+            
+            n = this.indicesInFit();
+            dataset = this.data{this.gui.fileList.Value(1)};
+            ax = this.gui.ax1;
+            
+            xdata = dataset.fit.one.para(:, n);
+            ydata = dataset.fit.one.chi2(:, n);
+            plot(ax, xdata, ydata, 'o-', 'linewidth', 2);
+            
+            legend(ax, {'Likelihood'});
+            xlabel(ax, dataset.fit.one.parameters{n});
+            ylabel(ax, '\chi^2');
+            title(ax, '\chi^2');
+            
         end
         
         function plotTwoChi2(this)
+        end
+        
+        function plotFit(this)
+            
+            ax = this.gui.ax2;
+            
+            dataset = this.data{this.gui.fileList.Value(1)};
+            angles = dataset.rawdata.angle(this.gui.angleList.Value);
+            
+            xdata = linspace(min(angles), max(angles), 100);
+            ydata = dataset.system.calculateFluoIntensityCurve(dataset.fit.all.P, xdata);
+            
+            plot(ax, xdata, ydata, 'b-', 'linewidth', 2);
+            
         end
         
     end

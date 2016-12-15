@@ -399,6 +399,8 @@ classdef XeRayGUI < handle
                     this.replot('lower');
                 case 'fit'
                     this.dynamicOnOffControl();
+                    this.gui.showFit.Value = true;
+                    this.replot('lower');
                 otherwise
                     warning('Case not fonund for XeRayGUI.updateView().');
             end
@@ -452,6 +454,7 @@ classdef XeRayGUI < handle
                                         this.plotOneChi2();
                                 end
                             case 2
+                                
                         end
                 end
                 
@@ -1850,6 +1853,9 @@ classdef XeRayGUI < handle
         end
         
         function plotTwoLikelihood(this)
+            
+            
+            
         end
         
         function plotOneChi2(this)
