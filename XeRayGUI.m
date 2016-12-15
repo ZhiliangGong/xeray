@@ -278,15 +278,15 @@ classdef XeRayGUI < handle
                 
                 this.gui.withText = uicontrol(rightPanel,'Style','text','String','With','Units','normalized','HorizontalAlignment','left',...
                     'Position',[0.025 0.395 0.07 0.03]);
+                
                 this.gui.confidenceInput = uicontrol(rightPanel,'Style','edit','String','95','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.1 0.4 0.07 0.03],'CallBack',@this.confidenceInput_Callback);
+                    'HorizontalAlignment','left','Position',[0.1 0.4 0.07 0.03],'CallBack',@this.ConfidenceInput_Callback);
+                
                 this.gui.confidenceText = uicontrol(rightPanel,'Style','text','String','% confidence window','Units','normalized','HorizontalAlignment','left',...
                     'Position',[0.171 0.395 0.28 0.03]);
-                this.gui.recordFitting = uicontrol(rightPanel,'Style','pushbutton','String','Record Fitting','Units','normalized',...
-                    'Position',[0.452 0.4 0.22 0.03],'CallBack',@this.recordFitting_Callback);
                 
-                this.gui.adjustPara = uicontrol(rightPanel,'Style','pushbutton','String','Adjust Para','Units','normalized',...
-                    'Position',[0.77 0.4 0.2 0.03],'CallBack',@this.adjustPara_Callback);
+                this.gui.recordFitting = uicontrol(rightPanel,'Style','pushbutton','String','Record Fitting','Units','normalized',...
+                    'Position',[0.452 0.4 0.22 0.03],'CallBack',@this.RecordFittingButton_Callback);
                 
             end
             
@@ -297,26 +297,23 @@ classdef XeRayGUI < handle
                 this.gui.output = uicontrol(rightPanel,'Style','edit','Max',2,'HorizontalAlignment','left','Units','normalized',...
                     'Position',[0.03 0.07 0.935 0.32]);
                 
-                uicontrol(rightPanel,'Style','pushbutton','String','Clear','Units','normalized',...
-                    'Position',[0.82 0.038 0.15 0.03],'CallBack',@this.clearButton_Callback);
+                this.gui.clearOutput = uicontrol(rightPanel,'Style','pushbutton','String','Clear','Units','normalized',...
+                    'Position',[0.82 0.038 0.15 0.03],'CallBack', @this.ClearButton_Callback);
                 
                 uicontrol(rightPanel,'Style','text','String','Save:','Units','normalized',...
                     'HorizontalAlignment','left','Position',[0.025 0.035 0.08 0.025]);
                 
-                uicontrol(rightPanel,'Style','pushbutton','String','Output Text','Units','normalized',...
-                    'Position',[0.024 0.007 0.2 0.03],'CallBack',@this.saveText_Callback);
+                this.gui.saveOutput = uicontrol(rightPanel,'Style','pushbutton','String','Output Text','Units','normalized',...
+                    'Position',[0.024 0.007 0.2 0.03],'CallBack', @this.SaveOutputTextButton_Callback);
                 
-                uicontrol(rightPanel,'Style','pushbutton','String','Upper Figure','Units','normalized',...
-                    'Position',[0.234 0.007 0.2 0.03],'CallBack',@this.saveFig1_Callback);
+                this.gui.saveUpperFigure = uicontrol(rightPanel,'Style','pushbutton','String','Upper Figure','Units','normalized',...
+                    'Position',[0.234 0.007 0.2 0.03],'CallBack', @this.SaveUpperFigureButton_Callback);
                 
-                uicontrol(rightPanel,'Style','pushbutton','String','Lower Figure','Units','normalized',...
-                    'Position',[0.444 0.007 0.2 0.03],'CallBack',@this.saveFig2_Callback);
+                this.gui.saveLowerFigure = uicontrol(rightPanel,'Style','pushbutton','String','Lower Figure','Units','normalized',...
+                    'Position',[0.444 0.007 0.2 0.03],'CallBack', @this.SaveLowerFigureButton_Callback);
                 
-                uicontrol(rightPanel,'Style','pushbutton','String','Data Set','Units','normalized',...
-                    'Position',[0.654 0.007 0.15 0.03],'CallBack',@this.saveDataset_Callback);
-                
-                uicontrol(rightPanel,'Style','pushbutton','String','Data & Fit','Units','normalized',...
-                    'Position',[0.814 0.007 0.17 0.03],'CallBack',@this.saveDataFit_Callback);
+                this.gui.saveData = uicontrol(rightPanel,'Style','pushbutton','String','Data & Fit','Units','normalized',...
+                    'Position',[0.66 0.007 0.17 0.03],'CallBack', @this.SaveDataAndFitButton_Callback);
                 
             end
             
@@ -401,6 +398,12 @@ classdef XeRayGUI < handle
                     this.dynamicOnOffControl();
                     this.gui.showFit.Value = true;
                     this.replot('lower');
+                    if this.chosenPlotPara()
+                        this.replot('upper');
+                    end
+                    this.recordFittingResults();
+                case 'clear'
+                    this.gui.output.String = {};
                 otherwise
                     warning('Case not fonund for XeRayGUI.updateView().');
             end
@@ -454,7 +457,12 @@ classdef XeRayGUI < handle
                                         this.plotOneChi2();
                                 end
                             case 2
-                                
+                                switch this.gui.likelihoodChi2.Value
+                                    case 1
+                                        this.plotTwoLikelihood();
+                                    case 2
+                                        this.plotTwoChi2();
+                                end
                         end
                 end
                 
@@ -885,11 +893,10 @@ classdef XeRayGUI < handle
         
         function StepInput_Callback(this, source, eventdata)
             
-            olddata = event.PreviousData;
             n = str2double(this.gui.stepInput.String);
             
             if n < 5
-                this.gui.stepInput.String = olddata;
+                this.gui.stepInput.String = 20;
                 h = warndlg('At least 5 steps for the parameters being fitted.');
                 try
                     close(h);
@@ -903,30 +910,9 @@ classdef XeRayGUI < handle
         
         function FitButton_Callback(this, source, eventdata)
             
-            n = this.gui.angleList.Value;
-            dataset = this.data{this.gui.fileList.Value(1)};
-            m = sum(dataset.fit.lower ~= dataset.fit.upper);
-            if n < m + 1
-                h = errordlg('Select at least one more data point than the number of parameters being fitted.', 'Closing in 5 s...');
-                pause(5);
-                try
-                    close(h);
-                catch
-                end
-            else
-                this.processInputs('all');
-                
-                h = msgbox({'Fitting in process...', 'Do not close this window.'});
-                
-                dataset.runFluoFit();
-                
-                try
-                    close(h);
-                catch
-                end
+            if this.runFitting()
+                this.updateView('fit');
             end
-            
-            this.updateView('fit');
             
         end
         
@@ -940,6 +926,99 @@ classdef XeRayGUI < handle
             
             this.updateView('show-fit');
             
+        end
+        
+        function ClearButton_Callback(this, source, eventdata)
+            
+            this.updateView('clear');
+            
+        end
+        
+        function RecordFittingButton_Callback(this, source, eventdata)
+            
+            confidence = str2double(this.gui.confidenceInput.String) / 100;
+            this.recordFittingResults(confidence);
+            
+        end
+        
+        function ConfidenceInput_Callback(this, source, eventdata)
+            
+            confidence = str2double(this.gui.confidenceInput.String) / 100;
+            this.recordFittingResults(confidence);
+            
+        end
+        
+        function SaveOutputTextButton_Callback(this, source, eventdata) %save text output
+
+            file = this.gui.fileList.String{this.gui.fileList.Value(1)};
+            
+            [~, string1, ~] = fileparts(file);
+            string1 = sprintf('%s%s', string1, '.xerayoutput');
+            string2 = 'Save output text as: ';
+            
+            [fileName, path] = uiputfile(string1, string2);
+            file = fullfile(path, fileName);
+            text = output.String;
+            
+            fid = fopen(file,'w');
+            fprintf(fid,strcat(datestr(datetime),'\n'));
+            for i = 1:length(text)
+                fprintf(fid, strcat(text{i},'\n'));
+            end
+            fclose(fid);
+            
+        end
+        
+        function SaveUpperFigureButton_Callback(this, source, eventdata) %save figure one
+
+            fileName = this.gui.fileList.String{this.gui.fileList.Value};
+            
+            [~, fileName, ~] = fileparts(fileName);
+            
+            theFigure = figure;
+            copyobj(this.gui.ax1, theFigure);
+            ax = gca;
+            ax.Units = 'normalized';
+            ax.Position = [.13 .11 .775 .815];
+            hgsave(theFigure, fileName);
+            
+        end
+        
+        function SaveLowerFigureButton_Callback(this, source, eventdata) %save figure one
+
+            fileName = this.gui.fileList.String{this.gui.fileList.Value};
+            theFigure = figure;
+            copyobj(this.gui.ax2, theFigure);
+            ax = gca;
+            ax.Units = 'normalized';
+            ax.Position = [.13 .11 .775 .815];
+            hgsave(theFigure, fileName);
+            
+        end
+        
+        function SaveDataAndFitButton_Callback(this, source, eventdata)
+            
+            dataset = this.data{this.gui.fileList.Value(1)};
+            
+            if ~isempty(dataset.fit.all)
+            
+                file = this.gui.fileList.String{this.gui.fileList.Value(1)};
+                [~, file, ~] = fileparts(file);
+                
+                filename = sprintf('%s%s', file, '.xerayfit');
+                
+                jsondata.angle = num2str(dataset.data.angle);
+                jsondata.signal = num2str(dataset.data.lineshape.signal);               
+                jsondata.error = num2str(dataset.data.lineshape.signalError);
+                jsondata.fit = num2str(dataset.system.calculateFluoIntensity(dataset.fit.all.P));
+                
+                savejson('', jsondata, filename);
+                
+            else
+                
+                this.raiseErrorDialog('No fitting results yet.');
+                
+            end
         end
         
         % model controls
@@ -1273,6 +1352,8 @@ classdef XeRayGUI < handle
                         index = find(this.chosenFitConcentration());
                         lower = [mat(:, 1)', index];
                         upper = [mat(:, 2)', index];
+                        index = this.fitLayerIndex();
+                        dataset.system.concentration(index) = table.Data{4, 3};
                 end
                 
                 steps = str2double(this.gui.stepInput.String);
@@ -1298,6 +1379,38 @@ classdef XeRayGUI < handle
                 case 4
                     starts = [mat(:, 3)', 0];
             end
+            
+        end
+        
+        function flag = runFitting(this)
+            
+            flag = false;
+            
+            n = this.gui.angleList.Value;
+            dataset = this.data{this.gui.fileList.Value(1)};
+            m = sum(dataset.fit.lower ~= dataset.fit.upper);
+            if n < m + 1
+                h = errordlg('Select at least one more data point than the number of parameters being fitted.', 'Closing in 5 s...');
+                pause(5);
+                try
+                    close(h);
+                catch
+                end
+            else
+                this.processInputs('all');
+                
+                h = msgbox({'Fitting in process...', 'Do not close this window.'});
+                
+                dataset.runFluoFit();
+                
+                flag = true;
+                
+                try
+                    close(h);
+                catch
+                end
+            end
+            
             
         end
         
@@ -1370,6 +1483,7 @@ classdef XeRayGUI < handle
                             this.gui.fileList.Enable = 'on';
                             this.gui.showCal.Enable = 'off';
                             this.gui.showFit.Enable = 'off';
+                            this.gui.showFit.Value = false;
                             this.gui.showError.Visible = 'on';
                             this.gui.likelihoodChi2.Visible = 'off';
                         case 1
@@ -1428,14 +1542,20 @@ classdef XeRayGUI < handle
         function matchParameterToLayer(this)
             
             ptable = this.gui.parametersTable;
+            ltable = this.gui.layerTable;
             n = size(ptable.Data, 1);
             
-            if n == 4 && ptable.Data{4, 4}
-                index = this.chosenFitConcentration();
-                this.gui.layerTable.Data{find(index), 5} = false;
-                
-                this.gui.parametersTable.RowName = {'Angle Offset','Scale Factor','Background'};
-                this.gui.parametersTable.Data = this.gui.parametersTable.Data(1:3, :);
+            if n == 4
+                if ptable.Data{4, 4}
+                    index = this.chosenFitConcentration();
+                    ltable.Data{find(index), 5} = false;
+                    
+                    ptable.RowName = {'Angle Offset','Scale Factor','Background'};
+                    ptable.Data = ptable.Data(1:3, :);
+                else
+                    conc = ptable.Data{4, 3};
+                    ltable.Data{this.fitLayerIndex(), 4} = conc;
+                end
             end
             
         end
@@ -1620,7 +1740,7 @@ classdef XeRayGUI < handle
         function indices = indicesInFit(this)
             
             dat = cell2mat(this.gui.parametersTable.Data(:, 4:5));
-            fixed = dat(:, 1);
+            fixed = ~dat(:, 1);
             plotting = dat(:, 2);
             
             if sum(plotting)
@@ -1629,6 +1749,76 @@ classdef XeRayGUI < handle
                 for i = 1 : length(plotting)
                     indices(i) = sum(fixed(1 : plotting(i)));
                 end
+            end
+            
+        end
+        
+        function recordFittingResults(this, confidence)
+            
+            if nargin == 1
+                confidence = 0;
+            end
+            
+            oldtext = this.gui.output.String;
+            
+            n = this.gui.fileList.Value;
+            fits = this.data{n}.fit;
+            
+            try
+                m = length(fits.one.parameters);
+                if m == 0
+                    m = -3;
+                end
+            catch
+                m = -3;
+            end
+            
+            text = cell(7+m, 1);
+            
+            text{1} = '--------------------------------------------------------------------';
+            text{2} = sprintf('%s %s', '#Time stamp:', datestr(datetime));
+            text{3} = sprintf('%s%s%s', '#Fitted parameters: (', catStringCellArrayWithComma(fits.one.parameters), ')');
+            text{4} = '';
+            
+            if m
+                text{5} = '#Fitting report';
+                text{6} = sprintf('%s %f', '#Best chi^2:', fits.all.chi2);
+                if confidence
+                    text{7} = sprintf('%8s%15s%20s%10s%5.3f%s', '', 'TRR', 'Brute Force', 'Error(', confidence, ')');
+                    multiplier = norminv((1-confidence)/2+confidence, 0, 1);
+                else
+                    text{7} = sprintf('%8s%15s%20s%15s', '', 'TRR', 'Brute Force', 'Adjusted Std');
+                    multiplier = 1;
+                end
+                for i = 8 : 7+m
+                    index = i - 7;
+                    paraLocation = fits.location();
+                    paraIndex = paraLocation(index);
+                    text{i} = sprintf('%-13s%10f %10f %10f',fits.one.parameters{index}, fits.all.P(paraIndex), fits.one.value(index), multiplier*fits.one.adjustedStd(index));
+                end
+            end
+            
+            if ~isempty(oldtext)
+                text = [text;oldtext];
+            end
+            
+            this.gui.output.String = text;
+            
+        end
+        
+        function index = fitLayerIndex(this)
+            
+            index = 0;
+            
+            table = this.gui.layerTable;
+            
+            for i = 1 : size(table.Data, 1)
+                
+                if table.Data{i, 5}
+                    index = i;
+                    break;
+                end
+                
             end
             
         end
@@ -1699,6 +1889,7 @@ classdef XeRayGUI < handle
             ax = this.gui.ax1;
             
             [n, m, ~, ~] = this.getSelectionIndex();
+            
             [styles, legends, ~, ~] = this.getSpectraStylesAndLegends();
             
             hold(ax, 'off');
@@ -1724,7 +1915,7 @@ classdef XeRayGUI < handle
             xlabel(ax, 'Energy (keV)');
             ylabel(ax, 'Signal');
             
-            for i = length(this.gui.angleList.Value)
+            for i = 1 : length(this.gui.angleList.Value)
                 xdata = this.data{n(i)}.data.lineshape.energy;
                 ydata = this.data{n(i)}.data.lineshape.(marker)(:, m(i));
                 plot(ax, xdata, ydata, styles{i}(2));
@@ -1854,7 +2045,27 @@ classdef XeRayGUI < handle
         
         function plotTwoLikelihood(this)
             
+            n = this.indicesInFit();
+            fits = this.data{this.gui.fileList.Value(1)}.fit.two{n(1), n(2)};
             
+            xdata = fits.para1;
+            ydata = fits.para2;
+            zdata = fits.likelihood;
+            contourData = fits.contour;
+            
+            ax = this.gui.ax1;
+            
+            contourf(ax, xdata, ydata, zdata);
+            colorbar(ax);
+            
+            hold(ax, 'on');
+            plot(ax, contourData(1, :), contourData(2, :), 'r-', 'linewidth', 2);
+            hold(ax, 'off');
+            
+            xlabel(ax, fits.parameters{1});
+            ylabel(ax, fits.parameters{2});
+            legend(ax, 'Joint Likelihood', sprintf('%.2f %s', fits.confidence, 'Confidence Window'));
+            title(ax, sprintf('%s %s %s %s','Joint Likelihood of', fits.parameters{1}, 'and', fits.parameters{2}));
             
         end
         
@@ -1868,7 +2079,7 @@ classdef XeRayGUI < handle
             ydata = dataset.fit.one.chi2(:, n);
             plot(ax, xdata, ydata, 'o-', 'linewidth', 2);
             
-            legend(ax, {'Likelihood'});
+            legend(ax, '\chi^2');
             xlabel(ax, dataset.fit.one.parameters{n});
             ylabel(ax, '\chi^2');
             title(ax, '\chi^2');
@@ -1876,6 +2087,24 @@ classdef XeRayGUI < handle
         end
         
         function plotTwoChi2(this)
+            
+            n = this.indicesInFit();
+            fits = this.data{this.gui.fileList.Value(1)}.fit.two{n(1), n(2)};
+            
+            xdata = fits.para1;
+            ydata = fits.para2;
+            zdata = fits.chi2;
+            
+            ax = this.gui.ax1;
+            
+            contourf(ax, xdata, ydata, zdata);
+            colorbar(ax);
+            
+            xlabel(ax, fits.parameters{1});
+            ylabel(ax, fits.parameters{2});
+            legend(ax, 'Joint \chi^2');
+            title(ax, sprintf('%s %s %s %s','Joint \chi^2 of', fits.parameters{1}, 'and', fits.parameters{2}));
+            
         end
         
         function plotFit(this)
