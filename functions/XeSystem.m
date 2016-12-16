@@ -16,7 +16,6 @@ classdef XeSystem < handle
         chemical
         
         density
-        concentration
         layerIntensity
         
     end
@@ -34,6 +33,8 @@ classdef XeSystem < handle
             this.chemical = ChemicalFormula();
             
         end
+        
+        %% layer operations
         
         function a = offsetAngle(this)
             
@@ -70,10 +71,9 @@ classdef XeSystem < handle
                     error('Arguments for update layer function not right.');
             end
             
-            this.concentration(n) = 0;
             this.getDensity(n);
             this.getRefractionProperties(n);
-            this.getLayerIntegratedIntensity();
+            this.storeLayerIntensity();
 
         end
         
@@ -91,7 +91,6 @@ classdef XeSystem < handle
                 this.electronDensity = this.electronDensity(sel);
                 this.thickness = this.thickness(sel);
                 this.density = this.density(sel);
-                this.concentration = this.concentration(sel);
                 this.layerIntensity = this.layerIntensity(:, sel);
 
                 this.chemical.pop(indices);
@@ -113,7 +112,6 @@ classdef XeSystem < handle
                 this.electronDensity(sel) = this.electronDensity;
                 this.thickness(sel) = this.thickness;
                 this.density(sel) = this.density;
-                this.concentration(sel) = this.concentration;
                 this.layerIntensity(:, sel) = this.layerIntensity;
 
                 this.chemical.makeSpace(position);
@@ -130,14 +128,14 @@ classdef XeSystem < handle
             this.chemical.update(n, element, newStoichiometryNumber);
             this.getDensity(n);
             this.getRefractionProperties(n);
-            this.getLayerIntegratedIntensity();
+            this.storeLayerIntensity();
 
         end
         
         function updateThickness(this, indices, newThickness)
             
             this.thickness(indices) = newThickness;
-            this.getLayerIntegratedIntensity();
+            this.storeLayerIntensity();
             
         end
         
@@ -146,14 +144,7 @@ classdef XeSystem < handle
             this.electronDensity(indices) = newElectronDensity;
             this.getDensity(indices);
             this.getRefraction(indices);
-            this.getLayerIntegratedIntensity();
-            
-        end
-        
-        function updateOffset(this, offset)
-            
-            this.offset = offset;
-            this.getLayerIntegratedIntensity();
+            this.storeLayerIntensity();
             
         end
         
@@ -195,6 +186,14 @@ classdef XeSystem < handle
             
         end
         
+        %% calculations
+        
+        function storeLayerIntensity(this)
+            
+            this.layerIntensity = this.getLayerIntensity();
+            
+        end
+        
         function intensity = calculateElementFluoIntensity(this, element, angles)
             
             if nargin == 2
@@ -217,20 +216,19 @@ classdef XeSystem < handle
 
         end
         
-        function intensity = getLayerIntegratedIntensityForAngles(this, angles)
+        function intensity = getLayerIntensity(this, angles)
             
             if nargin == 1
-                angles = reshape(this.offsetAngle, length(this.offsetAngle), 1);
+                angles = reshape(this.offsetAngle(), length(this.offsetAngle()), 1);
             else
+                angles = angles - this.offset;
                 angles = reshape(angles, length(angles), 1);
             end
             
             if this.thickness(end) ~= Inf
                 error('The last layer must have infinite thickness.')
             end
-            
-            %angles = this.angle';
-            
+                        
             slits = this.slit * 1e7; % mm to A
             foots = this.foot * 1e7; % mm to A
             thick = this.thickness * 10; % nm to A
@@ -332,53 +330,65 @@ classdef XeSystem < handle
             
         end
         
-        function getLayerIntegratedIntensity(this)
+        function intensity = calculateSignalCurve(this, P, angles)
             
-            this.layerIntensity = this.getLayerIntegratedIntensityForAngles();
+            % P: angle offset, scale factor, background, and the
+            % concentrations of each layer
+            
+            this.offset = P(1);
+            int = this.getLayerIntensity(angles);
+            
+            conc = fliplr(P(4:end));
+            
+            intensity = sum(repmat(conc, length(angles), 1) .* int, 2)' * P(2) + P(3);
             
         end
         
-        function intensity = calculateFluoIntensity(this, P)
+        function intensity = calculateSignalSameOffset(this, P)
+            %this funciton is used for fitting, keep it simple
             
-            % P: angle offset, scale factor, background, concentration, and
-            % layer index
+            % P: angle offset, scale factor, background, and the
+            % concentrations of each layer
             
+            % if the offset is different, need to update the calculation
+            
+            conc = P(4:end);
+            
+            intensity = sum(repmat(conc, length(this.angle), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
+            
+        end
+        
+        function intensity = calculateSignal(this, P)
+            %this funciton is used for fitting, keep it simple
+            
+            % P: angle offset, scale factor, background, and the
+            % concentrations of each layer
+            
+            % if the offset is different, need to update the calculation
+            % for each layer
             if P(1) ~= this.offset
-                this.updateOffset(P(1));
+                this.offset = P(1);
+                this.layerIntensity = this.getLayerIntensity();
             end
             
-            if P(5) ~= 0
-                this.concentration(P(5)) = P(4);
-            end
+            conc = fliplr(P(4:end));
             
-            intensity = sum(repmat(this.concentration, length(this.offsetAngle()), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
+            intensity = sum(repmat(conc, length(this.angle), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
             
         end
         
-        function intensity = calculateFluoIntensityCurve(this, P, angles)
-            
-            if P(1) ~= this.offset
-                this.updateOffset(P(1));
-            end
-            
-            if P(5) ~= 0
-                this.concentration(P(5)) = P(4);
-            end
-            
-            intensity = sum(repmat(this.concentration, length(angles), 1) .* this.getLayerIntegratedIntensityForAngles(angles), 2)' * P(2) + P(3);
-            
-        end
+        %% fitting function
         
-        function intensity = calculateFluoIntensityWithBounds(this, start, lower, upper)
+        function intensity = calculateSignalWithBounds(this, start, lower, upper)
             
             % parameters: parameters being fitted, with the last one being
             % the layer index
             fixed = (lower == upper);
-            P = zeros(1, 5);
+            P = zeros(size(lower));
             P(fixed) = lower(fixed);
             P(~fixed) = start;
             
-            intensity = this.calculateFluoIntensity(P);
+            intensity = this.calculateSignal(P);
             
         end
         

@@ -213,10 +213,10 @@ classdef XeRayGUI < handle
                 rightPanel = this.gui.rightPanel;
                 
                 rowName = {'1'};
-                colName = {'Formula', 'ED', 'Depth', 'Conc', 'Fit', 'Del'};
-                colFormat = {'char', 'numeric', 'numeric', 'numeric', 'logical', 'logical'};
-                colWidth = {140, 40, 40, 40, 30, 30};
-                tableData = {'H2O', 0.334, Inf, 0, false, false};
+                colName = {'Formula', 'ED', 'Depth (A)', 'Delete'};
+                colFormat = {'char', 'numeric', 'numeric', 'logical'};
+                colWidth = {170, 40, 60, 50};
+                tableData = {'H2O', 0.334, Inf, false};
                 
                 this.gui.layerTableTitle = uicontrol(rightPanel,'Style','text','String','Layer Structure:','Units','normalized','HorizontalAlignment','left',...
                     'Position',[0.025 0.81 0.8 0.025]);
@@ -238,11 +238,11 @@ classdef XeRayGUI < handle
                 
                 rightPanel = this.gui.rightPanel;
                 
-                rowName = {'Angle Offset','Scale Factor','Background'};
+                rowName = {'Angle-Offset','Scale-Factor','Background','Conc-1'};
                 colName = {'Min','Max','Start','Fix','Plot'};
                 colFormat = {'numeric','numeric','numeric','logical','logical'};
                 colWidth = {55 55 55 30 30};
-                tableData = {-0.001,0.001,0,false,false; 1,1,1,true,false; 1,1,1,true,false;};
+                tableData = {-0.0001, 0.0001, 0, false, false; 1, 1, 1, true, false; 1, 1, 1, true, false; 0, 0, 0, true, false};
                 
                 this.gui.parametersTableTitle = uicontrol(rightPanel,'Style','text','String','Fitting Parameters:','Units','normalized','HorizontalAlignment','left',...
                     'Position', [0.025 0.625 0.8 0.025]);
@@ -250,7 +250,7 @@ classdef XeRayGUI < handle
                 this.gui.parametersTable = uitable(rightPanel,'Data', tableData,'ColumnName', colName,...
                     'ColumnFormat', colFormat,'ColumnEditable', [true true true true true],'Units','normalized',...
                     'ColumnWidth',colWidth,'RowName',rowName,'RowStriping','off',...
-                    'Position', [0.025 0.495 0.935 0.13], 'CellEditCallBack', @this.ParametersTable_Callback);
+                    'Position', [0.025 0.425 0.935 0.2], 'CellEditCallBack', @this.ParametersTable_Callback);
                 
             end
             
@@ -258,35 +258,40 @@ classdef XeRayGUI < handle
                 
                 rightPanel = this.gui.rightPanel;
                 
+                h = 0.39;
+                
                 this.gui.layerTableTitle = uicontrol(rightPanel,'Style','text','String', 'Fitting Control:','Units','normalized','HorizontalAlignment','left',...
-                    'Position',[0.025 0.46 0.8 0.025]);
+                    'Position',[0.025 h 0.8 0.025]);
                 
                 this.gui.loadPara = uicontrol(rightPanel,'Style','pushbutton','String','Load Para','Units','normalized',...
-                    'Position',[0.024 0.43 0.17 0.03],'CallBack',@this.LoadPara_Callback);
+                    'Position',[0.024 h-0.03 0.17 0.03],'CallBack',@this.LoadPara_Callback);
                 
                 this.gui.savePara = uicontrol(rightPanel,'Style','pushbutton','String','Save Para','Units','normalized',...
-                    'Position',[0.19 0.43 0.17 0.03],'CallBack',@this.SavePara_Callback);
+                    'Position',[0.19 h-0.03 0.17 0.03],'CallBack',@this.SavePara_Callback);
                 
                 this.gui.stepInput = uicontrol(rightPanel,'Style','edit','String',20,'Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.62 0.43 0.1 0.03], 'CallBack', @this.StepInput_Callback);
+                    'HorizontalAlignment','left','Position',[0.62 h-0.03 0.1 0.03], 'CallBack', @this.StepInput_Callback);
                 
                 this.gui.stepText = uicontrol(rightPanel,'Style','text','String','Steps','Units','normalized',...
-                    'HorizontalAlignment','left','Position', [0.735 0.425 0.08 0.03]);
+                    'HorizontalAlignment','left','Position', [0.735 h-0.035 0.08 0.03]);
                 
                 this.gui.fitButton = uicontrol(rightPanel,'Style','pushbutton','String','Fit','Units','normalized',...
-                    'Position',[0.82 0.43 0.15 0.03],'CallBack', @this.FitButton_Callback);
+                    'Position',[0.82 h-0.03 0.15 0.03],'CallBack', @this.FitButton_Callback);
                 
                 this.gui.withText = uicontrol(rightPanel,'Style','text','String','With','Units','normalized','HorizontalAlignment','left',...
-                    'Position',[0.025 0.395 0.07 0.03]);
+                    'Position',[0.025 h-0.065 0.07 0.03]);
                 
                 this.gui.confidenceInput = uicontrol(rightPanel,'Style','edit','String','95','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.1 0.4 0.07 0.03],'CallBack',@this.ConfidenceInput_Callback);
+                    'HorizontalAlignment','left','Position',[0.1 h-0.06 0.07 0.03],'CallBack',@this.ConfidenceInput_Callback);
                 
                 this.gui.confidenceText = uicontrol(rightPanel,'Style','text','String','% confidence window','Units','normalized','HorizontalAlignment','left',...
-                    'Position',[0.171 0.395 0.28 0.03]);
+                    'Position',[0.171 h-0.065 0.28 0.03]);
                 
                 this.gui.recordFitting = uicontrol(rightPanel,'Style','pushbutton','String','Record Fitting','Units','normalized',...
-                    'Position',[0.452 0.4 0.22 0.03],'CallBack',@this.RecordFittingButton_Callback);
+                    'Position',[0.452 h-0.06 0.22 0.03],'CallBack',@this.RecordFittingButton_Callback);
+                
+                this.gui.updateStartButton = uicontrol(rightPanel,'Style','pushbutton','String','Update Starts','Units','normalized',...
+                    'Position',[0.75 h-0.06 0.22 0.03],'CallBack', @this.UpdateStartButton_Callback);
                 
             end
             
@@ -295,7 +300,7 @@ classdef XeRayGUI < handle
                 rightPanel = this.gui.rightPanel;
                 
                 this.gui.output = uicontrol(rightPanel,'Style','edit','Max',2,'HorizontalAlignment','left','Units','normalized',...
-                    'Position',[0.03 0.07 0.935 0.32]);
+                    'Position',[0.03 0.07 0.935 0.25]);
                 
                 this.gui.clearOutput = uicontrol(rightPanel,'Style','pushbutton','String','Clear','Units','normalized',...
                     'Position',[0.82 0.038 0.15 0.03],'CallBack', @this.ClearButton_Callback);
@@ -321,7 +326,7 @@ classdef XeRayGUI < handle
         
         %% controllers
         
-        function updateView(this, trigger, varargin)
+        function view(this, trigger, varargin)
             
             switch trigger
                 case 'file'
@@ -407,8 +412,10 @@ classdef XeRayGUI < handle
                     this.gui.output.String = {};
                 case 'load-inputs'
                     this.replot('lower');
+                case 'update-start'
+                    this.replot('lower');
                 otherwise
-                    warning('Case not fonund for XeRayGUI.updateView().');
+                    warning('Case not fonund for XeRayGUI.view().');
             end
             
         end
@@ -519,7 +526,7 @@ classdef XeRayGUI < handle
             
         end
         
-        function updateModel(this, trigger, varargin)
+        function model(this, trigger, varargin)
             
             switch trigger
                 case 'delete-layers'
@@ -531,7 +538,9 @@ classdef XeRayGUI < handle
             
         end
         
-        %% callbacks, left panel
+        
+        
+        %% callbacks - left panel
         
         function LoadButton_Callback(this, source, eventdata)
 
@@ -542,7 +551,7 @@ classdef XeRayGUI < handle
                 this.gui.fileList.String = [oldFiles, newFiles];
                 
                 if isempty(oldFiles)
-                    this.updateView('file');
+                    this.view('file');
                 end
                 
             end
@@ -564,7 +573,7 @@ classdef XeRayGUI < handle
                 n(m) = false(1, length(m));
                 this.data = this.data(n);
                 
-                this.updateView('delete', n);
+                this.view('delete', n);
                 
             end
             
@@ -572,21 +581,21 @@ classdef XeRayGUI < handle
         
         function FileList_Callback(this, source, eventdata)
 
-            this.updateView('file');
+            this.view('file');
             
         end
         
         function AngleList_Callback(this, source, eventdata)
             
-            this.updateView('angle');
+            this.view('angle');
             
         end
         
-        %% callbacks, middle panel
+        %% callbacks - middle panel
         
         function ShowError_Callback(this, source, eventdata)
             
-            this.updateView('error');
+            this.view('error');
             
         end
         
@@ -604,7 +613,7 @@ classdef XeRayGUI < handle
                     this.fitSpectraToElement();
             end
             
-            this.updateView('element');
+            this.view('element');
             
         end
         
@@ -612,59 +621,29 @@ classdef XeRayGUI < handle
             
             this.control.lineShape = this.gui.lineShape.String{this.gui.lineShape.Value};
             this.fitSpectraToElement();
-            this.updateView('lineshape');
+            this.view('lineshape');
             
         end
         
         function RemoveBackground_Callback(this, source, eventdata)
             
-            this.updateView('background');
+            this.view('background');
             
         end
         
-        %% callbacks right panel
+        %% callbacks - right panel
         
         function StartFitting_Callback(this, source, eventdata)
             
-            this.updateView('start-fitting');
-            this.updateModel('inputs', 'all');
+            this.view('start-fitting');
+            this.model('inputs', 'all');
             
         end
         
         function ShowCal_Callback(this, source, eventdata)
             
-            this.updateView('switch-cal');
+            this.view('switch-cal');
             
-        end
-        
-        function AddLayer_Callback(this, source, eventdata)
-            
-            layerData = this.gui.layerTable.Data;
-            [n, m] = size(layerData);
-            
-            newData = cell(n+1, m);
-            newData(2:n+1, :) = layerData;
-            newData(1, :) = {'H2O', 0.334, 1, 0, false, false};
-            
-            rowName = cell(1, n+1);
-            for i = 1 : n+1
-                rowName{i} = num2str(i);
-            end
-            
-            this.gui.layerTable.Data = newData;
-            this.gui.layerTable.RowName = rowName;
-            
-            this.updateModel('inputs', 'layer');
-            this.updateView('calculate');
-            
-        end
-        
-        function DeleteLayers_Callback(this, source, eventdata)
-            
-            this.updateView('delete-layers');
-            this.updateModel('delete-layers');
-            this.updateView('calculate');
-        
         end
         
         function BasicInfo_Callback(this, source, eventdata)
@@ -677,113 +656,215 @@ classdef XeRayGUI < handle
             if isnan(table.Data{ind(1), ind(2)})
                 table.Data{ind(1), ind(2)} = olddata;
             else
-                this.updateModel('inputs', 'all');
-                this.updateView('calculate');
+                this.model('inputs', 'all');
+                this.view('calculate');
             end
             
         end
         
+        function LikelihoodChi2_Callback(this, source, eventdata)
+            
+            this.view('likelihood-chi2');
+            
+        end
+        
+        function ShowFit_Callback(this, source, eventdata)
+            
+            this.view('show-fit');
+            
+        end
+        
+        function ConfidenceInput_Callback(this, source, eventdata)
+            
+            confidence = str2double(this.gui.confidenceInput.String) / 100;
+            this.recordFittingResults(confidence);
+            
+        end
+        
+        %% callbacks - table related
+        
         function LayerTable_Callback(this, source, eventdata)
             
-            ind = eventdata.Indices;
-            olddata = eventdata.PreviousData;
-            newdata = eventdata.EditData;
             
-            table = this.gui.layerTable;
-            n = size(table.Data, 1);
-            
-            switch ind(2)
-                case 1
-                    if ~isempty(newdata)
-                        try
-                            parseFormula(newdata);
-                        catch EM
-                            table.Data{ind(1), ind(2)} = olddata;
-                            this.raiseErrorDialog(EM.message);
-                        end
-                    end
-                case 2
-                    if str2double(newdata) <= 0
-                        table.Data{ind(1), ind(2)} = olddata;
-                        this.raiseErrorDialog('Electron density must be larger than 0.');
-                    end
-                case 3
-                    switch ind(1)
-                        case n
-                            table.Data{ind(1), ind(2)} = olddata;
-                        otherwise
-                            if str2double(newdata) <= 0
-                                table.Data{ind(1), ind(2)} = olddata;
-                                this.raiseErrorDialog('Depth must be larger than 0.');
-                            end
-                    end
-                case 4
-                    if str2double(newdata) < 0
-                        table.Data{ind(1), ind(2)} = olddata;
-                        this.raiseErrorDialog('Concentration must not be smaller than 0');
-                    else
-                        this.matchLayerToParameter();
-                    end
-                case 5
-                    if sum(this.chosenFitConcentration()) > 1
-                        this.resetFitConcentration();
-                        table.Data{ind(1), ind(2)} = newdata;
-                    end
-                    this.matchLayerToParameter();
-                case 6
-                    if ind(1) == n
-                        table.Data{ind(1), ind(2)} = false;
-                    end
+            if inputsAreGood
+                this.model('inputs', 'layer');
+                this.view('calculate');
             end
             
-            this.updateModel('inputs', 'layer');
-            this.updateView('calculate');
+            function flag = inputsAreGood
+                
+                flag = true;
+                
+                ind = eventdata.Indices;
+                olddata = eventdata.PreviousData;
+                newdata = eventdata.EditData;
+                
+                table = this.gui.layerTable;
+                n = size(table.Data, 1);
+            
+                switch ind(2)
+                    case 1
+                        if ~isempty(newdata)
+                            try
+                                parseFormula(newdata);
+                            catch EM
+                                flag = false;
+                                table.Data{ind(1), ind(2)} = olddata;
+                                this.raiseErrorDialog(EM.message);
+                            end
+                        end
+                    case 2
+                        if str2double(newdata) <= 0
+                            flag = false;
+                            table.Data{ind(1), ind(2)} = olddata;
+                            this.raiseErrorDialog('Electron density must be larger than 0.');
+                        end
+                    case 3
+                        switch ind(1)
+                            case n
+                                flag = false;
+                                table.Data{ind(1), ind(2)} = olddata;
+                            otherwise
+                                if str2double(newdata) <= 0
+                                    flag = false;
+                                    table.Data{ind(1), ind(2)} = olddata;
+                                    this.raiseErrorDialog('Depth must be larger than 0.');
+                                end
+                        end
+                    case 4
+                        if ind(1) == n
+                            flag = false;
+                            table.Data{ind(1), ind(2)} = false;
+                            this.raiseErrorDialog('Last layer cannot be deleted.');
+                        end
+                end
+                
+            end
+            
+        end
+        
+        function AddLayer_Callback(this, source, eventdata)
+            
+            % update layer table
+            table = this.gui.layerTable;
+            table.Data = [{'H2O', 0.334, 1, false}; table.Data;];
+            n = size(table.Data, 1);
+            table.RowName = [num2str(n); table.RowName];
+            
+            % update parameters table
+            table = this.gui.parametersTable;
+            table.Data = [table.Data; {0, 0, 0, true, false}];
+            table.RowName = [table.RowName; strcat('Conc-', num2str(n))];
+            
+            this.model('inputs', 'layer');
+            this.view('calculate');
+            
+        end
+        
+        function DeleteLayers_Callback(this, source, eventdata)
+
+            % delete the layer from layer table
+            
+            table = this.gui.layerTable;
+            sel = cell2mat(table.Data(:, end));
+            n = sum(sel);
+            if n
+                sel = ~sel;
+                table.Data = table.Data(sel, :);
+                table.RowName = table.RowName(n+1: end);
+                
+                % delete the layer from parameters table
+                table = this.gui.parametersTable;
+                location = length(sel) - find(~sel) + 4;
+                sel = true(size(table.Data, 1), 1);
+                sel(location) = false;
+                table.Data = table.Data(sel, :);
+                table.RowName = table.RowName(1:end-n);
+                
+                this.model('inputs', 'layer');
+                this.view('calculate');
+            end
             
         end
         
         function ParametersTable_Callback(this, source, eventdata)
             
-            ind = eventdata.Indices;
-            olddata = eventdata.PreviousData;
-            newdata = eventdata.EditData;
+            flag = inputsType;
             
-            table = this.gui.parametersTable;
-            numeric = ~isnan(table.Data{ind(1), ind(2)});
-            
-            switch ind(2)
+            switch flag
                 case 1
-                    if numeric
-                        if this.angleOffsetWithinLimit()
-                            this.adjustParameterTableBounds('min');
-                        else
-                            table.Data{ind(1), ind(2)} = olddata;
-                            this.raiseErrorDialog('Offset cannot be smaller than the smallest angle.');
-                        end
-                    else
-                        table.Data{ind(1), ind(2)} = olddata;
-                    end
+                    this.model('inputs', 'parameter');
+                    this.view('calculate');
                 case 2
-                    if numeric
-                        this.adjustParameterTableBounds('max');
-                    else
-                        table.Data{ind(1), ind(2)} = olddata;
-                    end
-                case 3
-                    if numeric
-                        this.adjustParameterTableBounds('start');
-                    else
-                        table.Data{ind(1), ind(2)} = olddata;
-                    end
-                case 4
-                    if ind(1) == 4
-                        if newdata
-                            this.matchParameterToLayer();
+                    this.dynamicOnOffControl();
+                    this.view('fit-quality');
+            end
+            
+            function flag = inputsType
+                
+                % flag: 0 - inputs are bad; 1 - should update lower figure;
+                % 2 - should update upper figure
+                
+                flag = 0;
+                
+                ind = eventdata.Indices;
+                olddata = eventdata.PreviousData;
+                newdata = eventdata.EditData;
+                
+                table = this.gui.parametersTable;
+                numeric = ~isnan(table.Data{ind(1), ind(2)});
+                
+                switch ind(2)
+                    case 1
+                        if numeric
+                            if this.angleOffsetWithinLimit()
+                                flag = 1;
+                                adjustBounds('min');
+                            else
+                                flag = 0;
+                                table.Data{ind(1), ind(2)} = olddata;
+                                this.raiseErrorDialog('Offset cannot be smaller than the smallest angle.');
+                            end
+                        else
+                            flag = 0;
+                            table.Data{ind(1), ind(2)} = olddata;
                         end
-                    else
+                    case 2
+                        if numeric
+                            if this.angleOffsetWithinLimit()
+                                flag = 1;
+                                adjustBounds('max');
+                            else
+                                flag = 0;
+                                table.Data{ind(1), ind(2)} = olddata;
+                                this.raiseErrorDialog('Offset cannot be smaller than the smallest angle.');
+                            end
+                        else
+                            flag = 0;
+                            table.Data{ind(1), ind(2)} = olddata;
+                        end
+                    case 3
+                        if numeric
+                            if this.angleOffsetWithinLimit()
+                                flag = 1;
+                                adjustBounds('start');
+                            else
+                                flag = 0;
+                                table.Data{ind(1), ind(2)} = olddata;
+                                this.raiseErrorDialog('Offset cannot be smaller than the smallest angle.');
+                            end
+                        else
+                            flag = 0;
+                            table.Data{ind(1), ind(2)} = olddata;
+                        end
+                    case 4
                         if newdata
                             table.Data{ind(1), 1} = table.Data{ind(1), 3};
                             table.Data{ind(1), 2} = table.Data{ind(1), 3};
+                            table.Data{ind(1), end} = false;
+                            flag = 2;
                         else
+                            flag = 0;
                             switch ind(1)
                                 case 1
                                     table.Data{ind(1), 1} = table.Data{ind(1), 3} - 1e-4;
@@ -794,38 +875,159 @@ classdef XeRayGUI < handle
                                 case 3
                                     table.Data{ind(1), 1} = table.Data{ind(1), 3} - 1;
                                     table.Data{ind(1), 2} = table.Data{ind(1), 3} + 1;
+                                otherwise
+                                    if table.Data{ind(1), ind(2)} == 0
+                                        table.Data{ind(1), 1} = 0;
+                                        table.Data{ind(1), 2} = 1;
+                                    else
+                                        table.Data{ind(1), 1} = table.Data{ind(1), ind(2)} * 0.5;
+                                        table.Data{ind(1), 2} = table.Data{ind(1), ind(2)} * 1.5;
+                                    end
                             end
                         end
-                    end
-                case 5
-                    if ~this.isParameterFitted(ind(1))
-                        table.Data{ind(1), ind(2)} = false;
-                    else
-                        checked = cell2mat(table.Data(:, end));
-                        if sum(checked) > 2
-                            checked(ind(1)) = 0;
-                            location = find(checked, 1);
-                            checked(location) = 0;
-                            checked(ind(1)) = 1;
-                            checkedCell = cell(size(checked));
-                            for i = 1 : length(checked)
-                                checkedCell{i} = logical(checked(i));
+                    case 5
+                        if ~this.isParameterFitted(ind(1))
+                            flag = 0;
+                            table.Data{ind(1), ind(2)} = false;
+                        else
+                            flag = 2;
+                            checked = cell2mat(table.Data(:, end));
+                            if sum(checked) > 2
+                                checked(ind(1)) = 0;
+                                location = find(checked, 1);
+                                checked(location) = 0;
+                                checked(ind(1)) = 1;
+                                checkedCell = cell(size(checked));
+                                for i = 1 : length(checked)
+                                    checkedCell{i} = logical(checked(i));
+                                end
+                                table.Data(:, end) = checkedCell;
                             end
-                            table.Data(:, end) = checkedCell;
                         end
-                        this.dynamicOnOffControl();
-                        this.updateView('fit-quality');
+                end
+                
+                function adjustBounds(what)
+                    
+                    matrix = cell2mat(table.Data(:, 1:3));
+                    mins = matrix(:, 1);
+                    maxs = matrix(:, 2);
+                    starts = matrix(:, 3);
+                    
+                    % adjust bounds
+                    
+                    switch what
+                        case 'min'
+                            loc = find(mins > maxs);
+                            if ~isempty(loc)
+                                for j = loc
+                                    table.Data{j, 2} = table.Data{j, 1};
+                                    table.Data{j, 3} = table.Data{j, 1};
+                                end
+                            else
+                                loc = find(mins > starts);
+                                if ~isempty(loc)
+                                    for j = loc
+                                        table.Data{j, 3} = table.Data{j, 1};
+                                    end
+                                end
+                            end
+                        case 'max'
+                            loc = find(mins > maxs);
+                            if ~isempty(loc)
+                                for j = loc
+                                    table.Data{j, 1} = table.Data{j, 2};
+                                    table.Data{j, 3} = table.Data{j, 2};
+                                end
+                            else
+                                loc = find(maxs < starts);
+                                if ~isempty(loc)
+                                    for j = loc
+                                        table.Data{j, 3} = table.Data{j, 2};
+                                    end
+                                end
+                            end
+                        case 'start'
+                            loc = find(starts > maxs);
+                            if ~isempty(loc)
+                                for j = loc
+                                    table.Data{j, 2} = table.Data{j, 3};
+                                end
+                            else
+                                loc = find(starts < mins);
+                                if ~isempty(loc)
+                                    for j = loc
+                                        table.Data{j, 1} = table.Data{j, 3};
+                                    end
+                                end
+                            end
                     end
+                    
+                    % check the fixed parameters
+                    
+                    n = size(table.Data, 1);
+                        
+                    matrix = cell2mat(table.Data(:, 1:3));
+                    mins = matrix(:, 1);
+                    maxs = matrix(:, 2);
+                    
+                    fixed = mins == maxs;
+                    
+                    for j = 1 : n
+                        table.Data{j, 4} = fixed(j);
+                    end
+                    
+                end
+                
             end
             
-            if ind(1) == 4
-                this.matchParameterToLayer();
+        end
+        
+        %% callbacks - fitting related
+        
+        function LoadPara_Callback(this, source, eventdata)
+            
+            [filename, pathname] = uigetfile('*.xeraypara', 'Load a saved parameter file.');
+            file = fullfile(pathname, filename);
+            
+            para = loadjson(file);
+            
+            
+            % load the basic info table
+            this.gui.basicInfoTable.Data = num2cell(para.basic);
+            
+            % load the layer table
+            dat = para.layer;
+            if ~ischar(dat{1})
+                n = length(dat);
+                m = length(dat{1});
+                newdata = cell(n, m);
+                for i = 1 : n
+                    newdata(i, :) = dat{i};
+                end
+                dat = newdata;
             end
             
-            if ind(2) ~= 5
-                this.updateModel('inputs', 'parameter');
-                this.updateView('calculate');
+            for i = 1 : size(dat, 1)
+                dat{i, end} = logical(dat{i, end});
             end
+            
+            this.gui.layerTable.Data = dat;
+            this.assignLayerTableRowName();
+            
+            % load the parameters table
+            dat = num2cell(para.parameter);
+            n = size(dat, 1);
+            
+            for i = 1 : n
+                dat{i, 4} = logical(dat{i, 4});
+                dat{i, 5} = logical(dat{i, 5});
+            end
+            
+            this.gui.parametersTable.Data = dat;
+            this.assignParameterTableRowName();
+            
+            this.model('inputs', 'all');
+            this.view('load-inputs');
             
         end
         
@@ -844,61 +1046,6 @@ classdef XeRayGUI < handle
             
         end
         
-        function LoadPara_Callback(this, source, eventdata)
-            
-            [filename, pathname] = uigetfile('*.xeraypara', 'Load a saved parameter file.');
-            file = fullfile(pathname, filename);
-            
-            para = loadjson(file);
-            
-            this.gui.basicInfoTable.Data = num2cell(para.basic);
-            
-            % load the layer table
-            dat = para.layer;
-            n = length(dat);
-            
-            if n ~= length(this.gui.layerTable.RowName) && ~ischar(dat{1})
-                this.assignLayerTableRowName(n);
-                m = 6;
-                newdata = cell(n, m);
-                for i = 1 : n
-                    newdata(i, :) = dat{i};
-                end
-                dat = newdata;
-            end
-            
-            for i = 1 : size(dat, 1)
-                dat{i, end-1} = logical(dat{i, end-1});
-                dat{i, end} = logical(dat{i, end});
-            end
-            
-            this.gui.layerTable.Data = dat;
-            
-            % load the parameters table
-            dat = num2cell(para.parameter);
-            n = size(dat, 1);
-            oldRowNames = this.gui.parametersTable.RowName;
-            if n ~= length(oldRowNames)
-                if n == 3
-                    rowNames = oldRowNames(1:end-1);
-                else
-                    rowNames = [oldRowNames; 'Conc.'];
-                end
-                this.gui.parametersTable.RowName = rowNames;
-            end
-            
-            for i = 1 : n
-                dat{i, 4} = logical(dat{i, 4});
-                dat{i, 5} = logical(dat{i, 5});
-            end
-            
-            this.gui.parametersTable.Data = dat;
-            
-            this.updateModel('inputs', 'all');
-            this.updateView('load-inputs');
-            
-        end
-        
         function StepInput_Callback(this, source, eventdata)
             
             n = str2double(this.gui.stepInput.String);
@@ -911,7 +1058,7 @@ classdef XeRayGUI < handle
                 catch
                 end
             else
-                this.updateModel('step');
+                this.model('step');
             end
             
         end
@@ -919,42 +1066,26 @@ classdef XeRayGUI < handle
         function FitButton_Callback(this, source, eventdata)
             
             if this.runFitting()
-                this.updateView('fit');
+                this.view('fit');
             end
             
         end
         
-        function LikelihoodChi2_Callback(this, source, eventdata)
+        function UpdateStartButton_Callback(this, source, eventdata)
             
-            this.updateView('likelihood-chi2');
+            table = this.gui.parametersTable;
+            try
+                dat = this.data{this.gui.fileList.Value(1)}.fit.all.P;
+                table.Data(:, 3) = num2cell(dat');
+            catch EM
+                disp(EM.message);
+            end
             
-        end
-        
-        function ShowFit_Callback(this, source, eventdata)
-            
-            this.updateView('show-fit');
-            
-        end
-        
-        function ClearButton_Callback(this, source, eventdata)
-            
-            this.updateView('clear');
+            this.view('update-start');
             
         end
         
-        function RecordFittingButton_Callback(this, source, eventdata)
-            
-            confidence = str2double(this.gui.confidenceInput.String) / 100;
-            this.recordFittingResults(confidence);
-            
-        end
-        
-        function ConfidenceInput_Callback(this, source, eventdata)
-            
-            confidence = str2double(this.gui.confidenceInput.String) / 100;
-            this.recordFittingResults(confidence);
-            
-        end
+        %% callbacks - saving functions
         
         function SaveOutputTextButton_Callback(this, source, eventdata) %save text output
 
@@ -1018,7 +1149,7 @@ classdef XeRayGUI < handle
                 jsondata.angle = num2str(dataset.data.angle);
                 jsondata.signal = num2str(dataset.data.lineshape.signal);               
                 jsondata.error = num2str(dataset.data.lineshape.signalError);
-                jsondata.fit = num2str(dataset.system.calculateFluoIntensity(dataset.fit.all.P));
+                jsondata.fit = num2str(dataset.system.calculateSignal(dataset.fit.all.P));
                 
                 savejson('', jsondata, filename);
                 
@@ -1028,6 +1159,21 @@ classdef XeRayGUI < handle
                 
             end
         end
+        
+        function ClearButton_Callback(this, source, eventdata)
+            
+            this.view('clear');
+            
+        end
+        
+        function RecordFittingButton_Callback(this, source, eventdata)
+            
+            confidence = str2double(this.gui.confidenceInput.String) / 100;
+            this.recordFittingResults(confidence);
+            
+        end
+        
+        
         
         %% model controls
         
@@ -1268,7 +1414,7 @@ classdef XeRayGUI < handle
                     this.gui.fileList.String = [oldFiles, newFiles];
                     
                     if isempty(oldFiles)
-                        this.updateView('file');
+                        this.view('file');
                     end
                     
                 end
@@ -1328,48 +1474,32 @@ classdef XeRayGUI < handle
             
                 dataset.system.pop();
                 
-                layerData = this.gui.layerTable.Data;
-                m = size(layerData, 1);
+                dat = this.gui.layerTable.Data;
+                n = size(dat, 1);
                 
-                concentration = zeros(1, m);
-                
-                for i = m : -1 : 1
-                    concentration(i) = layerData{i, 4};
-                    if isempty(layerData{i, 1})
-                        parameters = layerData(i, [2, 3]);
+                for i = n : -1 : 1
+                    if isempty(dat{i, 1})
+                        parameters = dat(i, [2, 3]);
                     else
-                        parameters = layerData(i, [2, 3, 1]);
+                        parameters = dat(i, [2, 3, 1]);
                     end
                     dataset.system.insert(1, parameters{:});
                 end
-                
-                dataset.system.concentration = concentration;
                 
             end
             
             function processFittingParameters(this)
             
                 table = this.gui.parametersTable;
-                m = size(table.Data, 1);
                 mat = cell2mat(table.Data(:, 1:3));
-                switch m
-                    case 3
-                        lower = [mat(:, 1)', 0, 0];
-                        upper = [mat(:, 2)', 0, 0];
-                    case 4
-                        index = find(this.chosenFitConcentration());
-                        lower = [mat(:, 1)', index];
-                        upper = [mat(:, 2)', index];
-                        index = this.fitLayerIndex();
-                        if ~isempty(index)
-                            dataset.system.concentration(index) = table.Data{4, 3};
-                        end
-                end
+                
+                lower = mat(:, 1)';
+                upper = mat(:, 2)';
                 
                 steps = str2double(this.gui.stepInput.String);
                 
                 if isempty(dataset.fit)
-                    dataset.fit = XeFitting(lower, upper, steps);
+                    dataset.fit = XeFits(lower, upper, steps);
                 else
                     dataset.fit.updateBounds(lower, upper, steps);
                 end
@@ -1380,15 +1510,8 @@ classdef XeRayGUI < handle
         
         function starts = obtainStarts(this)
             
-            table = this.gui.parametersTable;
-            n = size(table.Data, 1);
-            mat = cell2mat(table.Data(:, 1:3));
-            switch n
-                case 3
-                    starts = [mat(:, 3)', 0, 0];
-                case 4
-                    starts = [mat(:, 3)', 0];
-            end
+            mat = cell2mat(this.gui.parametersTable.Data(:, 1:3));
+            starts = mat(:, 3)';
             
         end
         
@@ -1411,7 +1534,7 @@ classdef XeRayGUI < handle
                 
                 h = msgbox({'Fitting in process...', 'Do not close this window.'});
                 
-                dataset.runFluoFit();
+                dataset.runFluoFitting();
                 
                 flag = true;
                 
@@ -1423,6 +1546,9 @@ classdef XeRayGUI < handle
             
             
         end
+        
+        
+        
         
         %% view controls
         
@@ -1606,20 +1732,17 @@ classdef XeRayGUI < handle
             
         end
         
-        function deleteLayers(this)
+        function flag = deleteLayers(this)
+            
+            flag = 0;
             
             table = this.gui.layerTable;
-            n = size(table.Data, 1);
-            
-            sel = true(1, n);
-            for i = 1 : n
-                if table.Data{i, end}
-                    sel(i) = false;
-                end
+            sel = cell2mat(table.Data(:, end));
+            if sum(sel)
+                flag = 1;
+                table.Data = table.Data(sel, :);
+                table.RowName = table.RowName(1:sum(sel));
             end
-            
-            table.Data = table.Data(sel, :);
-            table.RowName = table.RowName(1:sum(sel));
             
         end
         
@@ -1637,93 +1760,17 @@ classdef XeRayGUI < handle
             
         end
         
-        function adjustParameterTableBounds(this, what)
+        function assignLayerTableRowName(this)
             
-            table = this.gui.parametersTable;
-            
-            matrix = cell2mat(table.Data(:, 1:3));
-            mins = matrix(:, 1);
-            maxs = matrix(:, 2);
-            starts = matrix(:, 3);
-            
-            switch what
-                case 'min'
-                    ind = find(mins > maxs);
-                    if ~isempty(ind)
-                        for i = ind
-                            table.Data{i, 2} = table.Data{i, 1};
-                            table.Data{i, 3} = table.Data{i, 1};
-                        end
-                    else
-                        ind = find(mins > starts);
-                        if ~isempty(ind)
-                            for i = ind
-                                table.Data{i, 3} = table.Data{i, 1};
-                            end
-                        end
-                    end
-                case 'max'
-                    ind = find(mins > maxs);
-                    if ~isempty(ind)
-                        for i = ind
-                            table.Data{i, 1} = table.Data{i, 2};
-                            table.Data{i, 3} = table.Data{i, 2};
-                        end
-                    else
-                        ind = find(maxs < starts);
-                        if ~isempty(ind)
-                            for i = ind
-                                table.Data{i, 3} = table.Data{i, 2};
-                            end
-                        end
-                    end
-                case 'start'
-                    ind = find(starts > maxs);
-                    if ~isempty(ind)
-                        for i = ind
-                            table.Data{i, 2} = table.Data{i, 3};
-                        end
-                    else
-                        ind = find(starts < mins);
-                        if ~isempty(ind)
-                            for i = ind
-                                table.Data{i, 1} = table.Data{i, 3};
-                            end
-                        end
-                    end
-            end
-            
-            this.fixCheckboxes();
-            
-        end
-        
-        function fixed = fixCheckboxes(this)
-            
-            table = this.gui.parametersTable;
+            table = this.gui.layerTable;
             n = size(table.Data, 1);
             
-            matrix = cell2mat(table.Data(:, 1:3));
-            mins = matrix(:, 1);
-            maxs = matrix(:, 2);
-            
-            fixed = mins == maxs;
-            
+            rowNames = cell(1, n);
             for i = 1 : n
-                table.Data{i, 4} = fixed(i);
-            end
-            
-            fixed = find(fixed);
-            
-        end
-        
-        function assignLayerTableRowName(this, rowNumber)
-            
-            rowNames = cell(1, rowNumber);
-            for i = 1 : rowNumber
                 rowNames{i} = num2str(i);
             end
             
-            this.gui.layerTable.RowName = rowNames;
+            table.RowName = rowNames;
             
         end
         
@@ -1737,7 +1784,7 @@ classdef XeRayGUI < handle
             
             flag = false;
             
-            parameters = {'Angle-Offset', 'Scale-Factor', 'Background', 'Concentration'};
+            parameters = this.gui.parametersTable.RowName;
             parameter = parameters{n};
             
             dataset = this.data{this.gui.fileList.Value(1)};
@@ -1838,6 +1885,21 @@ classdef XeRayGUI < handle
             for i = 1 : size(this.gui.parametersTable.Data, 1)
                 this.gui.parametersTable.Data{i, end} = false;
             end
+            
+        end
+        
+        function assignParameterTableRowName(this)
+            
+            table = this.gui.parametersTable;
+            n = size(table.Data, 1);
+            rowNames = cell(n, 1);
+            rowNames(1:3) = {'Angle-Offset', 'Scale-Factor', 'Background'};
+            
+            for i = 4 : n
+                rowNames{i} = strcat('Conc-', num2str(i-3));
+            end
+            
+            table.RowName = rowNames;
             
         end
         
@@ -2035,7 +2097,7 @@ classdef XeRayGUI < handle
                 fineAngleRange = linspace(min(angles), max(angles), 100);
             end
             
-            calculated = dataset.system.calculateFluoIntensityCurve(starts, fineAngleRange);
+            calculated = dataset.system.calculateSignalCurve(starts, fineAngleRange);
             plot(ax, fineAngleRange, calculated, '-', 'linewidth', 2);
             
         end
@@ -2137,7 +2199,7 @@ classdef XeRayGUI < handle
             angles = dataset.rawdata.angle(this.gui.angleList.Value);
             
             xdata = linspace(min(angles), max(angles), 100);
-            ydata = dataset.system.calculateFluoIntensityCurve(dataset.fit.all.P, xdata);
+            ydata = dataset.system.calculateSignalCurve(dataset.fit.all.P, xdata);
             
             plot(ax, xdata, ydata, 'b-', 'linewidth', 2);
             
