@@ -291,7 +291,7 @@ classdef XeRayGUI < handle
                     'Position',[0.452 h-0.06 0.22 0.03],'CallBack',@this.RecordFittingButton_Callback);
                 
                 this.gui.updateStartButton = uicontrol(rightPanel,'Style','pushbutton','String','Update Starts','Units','normalized',...
-                    'Position',[0.6 h-0.06 0.22 0.03],'CallBack', @this.UpdateStartButton_Callback);
+                    'Position',[0.75 h-0.06 0.22 0.03],'CallBack', @this.UpdateStartButton_Callback);
                 
             end
             
@@ -411,6 +411,8 @@ classdef XeRayGUI < handle
                 case 'clear'
                     this.gui.output.String = {};
                 case 'load-inputs'
+                    this.replot('lower');
+                case 'update-start'
                     this.replot('lower');
                 otherwise
                     warning('Case not fonund for XeRayGUI.view().');
@@ -1038,9 +1040,12 @@ classdef XeRayGUI < handle
             currentFile = this.gui.fileList.String{this.gui.fileList.Value(1)};
             [~, name, ~] = fileparts(currentFile);
             
-            name = [name, '.xeraypara'];
+            filename = [name, '.xeraypara'];
             
             savejson('', jsondata, name);
+            
+            string2 = sprintf('%s %s %s','Save fitting parameters of',y.file,'as');
+            [fileName,path] = uiputfile(name, string2);
             
         end
         
@@ -1066,6 +1071,20 @@ classdef XeRayGUI < handle
             if this.runFitting()
                 this.view('fit');
             end
+            
+        end
+        
+        function UpdateStartButton_Callback(this, source, eventdata)
+            
+            table = this.gui.parametersTable;
+            try
+                dat = this.data{this.gui.fileList.Value(1)}.fit.all.P;
+                table.Data(:, 3) = num2cell(dat');
+            catch EM
+                disp(EM.message);
+            end
+            
+            this.view('update-start');
             
         end
         

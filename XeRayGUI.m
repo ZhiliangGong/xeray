@@ -1040,9 +1040,19 @@ classdef XeRayGUI < handle
             currentFile = this.gui.fileList.String{this.gui.fileList.Value(1)};
             [~, name, ~] = fileparts(currentFile);
             
-            name = [name, '.xeraypara'];
+            filename = [name, '.xeraypara'];
             
-            savejson('', jsondata, name);
+            %savejson('', jsondata, name);
+            text = savejson('', jsondata);
+            
+            msg = sprintf('%s %s %s','Save fitting parameters of', name, 'as');
+            [filename, path] = uiputfile(filename, msg);
+            if ~isnumeric(filename)
+                file = fullfile(path, filename);
+                fid = fopen(file, 'w');
+                fprintf(fid, text);
+                fclose(fid);
+            end
             
         end
         

@@ -231,7 +231,7 @@ classdef XeSystem < handle
                         
             slits = this.slit * 1e7; % mm to A
             foots = this.foot * 1e7; % mm to A
-            thick = this.thickness * 10; % nm to A
+            thick = this.thickness; % nm to A
             
             m = length(angles);
             n = this.N;
