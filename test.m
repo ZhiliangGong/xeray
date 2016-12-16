@@ -1,4 +1,4 @@
-clear;
+%clear;
 clc;
 close all;
 %this = XeRayGUI();
