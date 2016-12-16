@@ -15,7 +15,7 @@ classdef XeRayGUI < handle
     
     methods
         
-        % create the GUI
+        %% create the GUI
         
         function this = XeRayGUI(filenames)
             
@@ -319,13 +319,14 @@ classdef XeRayGUI < handle
             
         end
         
-        % view controller
+        %% controllers
         
         function updateView(this, trigger, varargin)
             
             switch trigger
                 case 'file'
                     this.displayAngles();
+                    this.switchFile();
                     this.replot('both');
                 case 'angle'
                     this.replot('both');
@@ -404,6 +405,8 @@ classdef XeRayGUI < handle
                     this.recordFittingResults();
                 case 'clear'
                     this.gui.output.String = {};
+                case 'load-inputs'
+                    this.replot('lower');
                 otherwise
                     warning('Case not fonund for XeRayGUI.updateView().');
             end
@@ -516,8 +519,6 @@ classdef XeRayGUI < handle
             
         end
         
-        % model controller
-        
         function updateModel(this, trigger, varargin)
             
             switch trigger
@@ -530,7 +531,7 @@ classdef XeRayGUI < handle
             
         end
         
-        % call back functions
+        %% callbacks, left panel
         
         function LoadButton_Callback(this, source, eventdata)
 
@@ -581,6 +582,8 @@ classdef XeRayGUI < handle
             
         end
         
+        %% callbacks, middle panel
+        
         function ShowError_Callback(this, source, eventdata)
             
             this.updateView('error');
@@ -618,6 +621,8 @@ classdef XeRayGUI < handle
             this.updateView('background');
             
         end
+        
+        %% callbacks right panel
         
         function StartFitting_Callback(this, source, eventdata)
             
@@ -672,7 +677,7 @@ classdef XeRayGUI < handle
             if isnan(table.Data{ind(1), ind(2)})
                 table.Data{ind(1), ind(2)} = olddata;
             else
-                this.updateModel('inputs', 'basic-info');
+                this.updateModel('inputs', 'all');
                 this.updateView('calculate');
             end
             
@@ -863,8 +868,8 @@ classdef XeRayGUI < handle
             end
             
             for i = 1 : size(dat, 1)
-                dat{i, end-1} = logical(dat{1, end-1});
-                dat{i, end} = logical(dat{1, end});
+                dat{i, end-1} = logical(dat{i, end-1});
+                dat{i, end} = logical(dat{i, end});
             end
             
             this.gui.layerTable.Data = dat;
@@ -888,6 +893,9 @@ classdef XeRayGUI < handle
             end
             
             this.gui.parametersTable.Data = dat;
+            
+            this.updateModel('inputs', 'all');
+            this.updateView('load-inputs');
             
         end
         
@@ -1021,7 +1029,7 @@ classdef XeRayGUI < handle
             end
         end
         
-        % model controls
+        %% model controls
         
         function loadConfig(this)
             
@@ -1353,7 +1361,9 @@ classdef XeRayGUI < handle
                         lower = [mat(:, 1)', index];
                         upper = [mat(:, 2)', index];
                         index = this.fitLayerIndex();
-                        dataset.system.concentration(index) = table.Data{4, 3};
+                        if ~isempty(index)
+                            dataset.system.concentration(index) = table.Data{4, 3};
+                        end
                 end
                 
                 steps = str2double(this.gui.stepInput.String);
@@ -1414,7 +1424,7 @@ classdef XeRayGUI < handle
             
         end
         
-        % view controls
+        %% view controls
         
         function displayAngles(this)
             
@@ -1823,7 +1833,15 @@ classdef XeRayGUI < handle
             
         end
         
-        % plot functions
+        function switchFile(this)
+            
+            for i = 1 : size(this.gui.parametersTable.Data, 1)
+                this.gui.parametersTable.Data{i, end} = false;
+            end
+            
+        end
+        
+        %% plot functions
         
         function plotWholeSpectraWithoutError(this)
             
@@ -1966,14 +1984,18 @@ classdef XeRayGUI < handle
             
         end
         
-        function plotSignal(this)
+        function plotSignal(this, ax)
+            
+            if nargin == 1
+                ax = this.gui.ax2;
+            end
             
             [~, ~, styles, legends] = this.getSpectraStylesAndLegends();
             [n, m] = this.getSelectedSignalIndices();
             
             sel = true(size(n));
             
-            hold(this.gui.ax2, 'off');
+            hold(ax, 'off');
             
             for i = 1:length(n)
                 if isempty(m{i})
@@ -1982,25 +2004,25 @@ classdef XeRayGUI < handle
                 xdata = this.data{n(i)}.data.angle(m{i});
                 ydata = this.data{n(i)}.data.lineshape.signal(m{i});
                 yerror = this.data{n(i)}.data.lineshape.signalError(m{i});
-                errorbar(this.gui.ax2, xdata, ydata, yerror, styles{i}, 'markersize', 8, 'linewidth', 2);
+                errorbar(ax, xdata, ydata, yerror, styles{i}, 'markersize', 8, 'linewidth', 2);
                 if i == 1
-                   hold(this.gui.ax2, 'on'); 
+                   hold(ax, 'on'); 
                 end
             end
             
             selectedLegends = legends(sel);
             
-            xlabel(this.gui.ax2, 'Angle (radians)');
-            ylabel(this.gui.ax2, 'Fluorescence Intensity (a.u.)');
-            title(this.gui.ax2, sprintf('%s %s', this.control.element, 'Fluorescence'));
-            legend(this.gui.ax2, selectedLegends);
-            hold(this.gui.ax2, 'off');
+            xlabel(ax, 'Angle (radians)');
+            ylabel(ax, 'Fluorescence Intensity (a.u.)');
+            title(ax, sprintf('%s %s', this.control.element, 'Fluorescence'));
+            legend(ax, selectedLegends);
+            hold(ax, 'off');
             
         end
         
         function plotCalculation(this)
             
-            dataset = this.data{this.gui.fileList.Value};
+            dataset = this.data{this.gui.fileList.Value(1)};
             starts = this.obtainStarts();
             
             angles = dataset.rawdata.angle(this.gui.angleList.Value);

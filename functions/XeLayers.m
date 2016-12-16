@@ -155,7 +155,7 @@ classdef XeLayers < handle
                         two = cell(m, m);
                         for k = 1 : m-1
                             for l = k+1 : m
-                                two{k, l} = FitTwoResult(parameters(location([k,l])));
+                                two{k, l} = FitTwoResult(parameters([k, l]));
                                 two{k, l}.para1 = para(:, k);
                                 two{k, l}.para2 = para(:, l);
                                 chi2 = zeros(n, n);
@@ -170,8 +170,8 @@ classdef XeLayers < handle
                                     par_lower(par_location(k)) = par_para(g, k);
                                     par_upper(par_location(k)) = par_para(g, k);
                                     for h = 1 : n
-                                        par_lower(par_location(l)) = par_par(h, l);
-                                        par_upper(par_location(l)) = par_par(h, l);
+                                        par_lower(par_location(l)) = par_para(h, l);
+                                        par_upper(par_location(l)) = par_para(h, l);
                                         p = par_P(par_lower ~= par_upper);
                                         lbs = par_lower(par_lower ~= par_upper);
                                         ubs = par_upper(par_lower ~= par_upper);
