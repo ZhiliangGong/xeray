@@ -124,28 +124,37 @@ classdef XeRayGUI < handle
                 this.gui.rightPanel = uipanel(handle0,'Units','normalized','Position',[0.68 0.02 0.31 0.97]);
                 
                 this.gui.elementEditPanel = uipanel(handle0,'Title','Element Management','Visible','off','Units','normalized',...
-                    'Position',[0.685 0.57 0.3 0.375]);
+                    'Position',[0.685 0.03 0.3 0.91]);
             end
             
             function createElementEditPanel(this)
                 
                 elementEditPanel = this.gui.elementEditPanel;
                 elementNames = fieldnames(this.ElementProfiles);
+                if ~isempty(elementNames)
+                    status = 'on';
+                else
+                    status = 'off';
+                end
+                
+                base = 0.965;
+                textHeight = 0.025;
+                btnHeight = 0.035;
                 
                 uicontrol(elementEditPanel,'Style','text','String','Existing Elements','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.02 0.9 0.3 0.0825]);
+                    'HorizontalAlignment','left','Position',[0.0200 base 0.3000 textHeight]);
                 
                 uicontrol(elementEditPanel,'Style','pushbutton','String','Close','Units','normalized',...
-                    'Position',[0.8 0.9 0.15 0.0825],'Callback',@this.closeElementTab_Callback);
+                    'Position',[0.88 0.01 0.11 btnHeight], 'CallBack', @this.CloseElementTab_Callback);
                 
                 this.gui.elementListbox = uicontrol(elementEditPanel,'Style','listbox','String', elementNames, 'Units','normalized',...
-                    'Position',[0.02 0.04 0.2 0.88],'Max',1,'CallBack',@this.elementListbox_Callback);
+                    'Position',[0.02 0.02 0.2 0.94],'Max',1,'CallBack', @this.ElementListbox_Callback);
                 
                 uicontrol(elementEditPanel,'Style','text','String','Element Name:','Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.25 0.86 0.25 0.05]);
+                    'HorizontalAlignment','left','Position',[0.25 0.94 0.25 textHeight]);
                 
                 this.gui.elementNameInput = uicontrol(elementEditPanel,'Style','edit','String',elementNames{1},'Units','normalized',...
-                    'HorizontalAlignment','left','Position',[0.45 0.84 0.25 0.08]);
+                    'HorizontalAlignment','left','Position',[0.45 0.935 0.15 btnHeight], 'CallBack', @this.ElementNameInput_Callback);
                 
                 columnName = {'1','2'};
                 columnFormat = {'numeric','numeric'};
@@ -156,16 +165,16 @@ classdef XeRayGUI < handle
                 this.gui.elementTable = uitable(elementEditPanel,'ColumnName', columnName,'Data',elementTableData,...
                     'ColumnFormat', columnFormat,'ColumnEditable', [true true],'Units','normalized',...
                     'ColumnWidth',columnWidth,'RowName',rowName,'RowStriping','off',...
-                    'Position',[0.25 0.45 0.7 0.36]);
+                    'Position',[0.25 0.78 0.7 0.15], 'CellEditCallback', @this.ElementTable_Callback);
                 
                 uicontrol(elementEditPanel,'Style','text','String','Note: (1) FWHM is optinal, (2) enter both the lower and upper bounds, (3) enter 1 or 2 peaks.',...
-                    'Units','normalized','HorizontalAlignment','left','Position',[0.25 0.28 0.65 0.15]);
+                    'Units','normalized','HorizontalAlignment','left','Position',[0.25 0.72 0.65 0.05]);
                 
-                uicontrol(elementEditPanel,'Style','pushbutton','String','Add/Modify','Units','normalized',...
-                    'Position',[0.67 0.135 0.28 0.0825],'Callback',@this.modifyElementButton_Callback);
+                uicontrol(elementEditPanel,'Style','pushbutton','String','Add','Units','normalized',...
+                    'Position',[0.81 base-0.03 0.15 btnHeight],'CallBack', @this.AddElementButton_Callback);
                 
-                uicontrol(elementEditPanel,'Style','pushbutton','String','Remove Element','Units','normalized',...
-                    'Position',[0.67 0.05 0.28 0.0825],'Callback',@this.removeElementButton_Callback);
+                uicontrol(elementEditPanel, 'Style', 'pushbutton', 'String', 'Remove', 'Units', 'normalized',...
+                    'Position',[0.65 base-0.03 0.15 btnHeight], 'Enable', status, 'CallBack', @this.RemoveElementButton_Callback);
                 
             end
             
@@ -359,7 +368,7 @@ classdef XeRayGUI < handle
                         case 'none'
                             this.replot();
                         case 'new'
-                            
+                            this.gui.elementEditPanel.Visible = 'on';
                         otherwise
                             this.replot();
                     end
@@ -413,6 +422,10 @@ classdef XeRayGUI < handle
                 case 'load-inputs'
                     this.replot('lower');
                 case 'update-start'
+                    this.replot('lower');
+                case 'alter-layer'
+                    this.gui.showFit.Value = false;
+                    this.gui.showFit.Enable = 'off';
                     this.replot('lower');
                 otherwise
                     warning('Case not fonund for XeRayGUI.view().');
@@ -538,8 +551,6 @@ classdef XeRayGUI < handle
             
         end
         
-        
-        
         %% callbacks - left panel
         
         function LoadButton_Callback(this, source, eventdata)
@@ -549,6 +560,12 @@ classdef XeRayGUI < handle
             if ~isempty(newFiles)
                 
                 this.gui.fileList.String = [oldFiles, newFiles];
+                
+                n = length(this.gui.elementPopup.String);
+                m = this.gui.elementPopup.Value;
+                if m > 1 && m < n
+                    this.fitSpectraToElement();
+                end
                 
                 if isempty(oldFiles)
                     this.view('file');
@@ -581,6 +598,7 @@ classdef XeRayGUI < handle
         
         function FileList_Callback(this, source, eventdata)
 
+            
             this.view('file');
             
         end
@@ -599,6 +617,22 @@ classdef XeRayGUI < handle
             
         end
         
+        function LineShape_Callback(this, source, eventdata)
+            
+            this.control.lineShape = this.gui.lineShape.String{this.gui.lineShape.Value};
+            this.fitSpectraToElement();
+            this.view('lineshape');
+            
+        end
+        
+        function RemoveBackground_Callback(this, source, eventdata)
+            
+            this.view('background');
+            
+        end
+        
+        %% callbacks - right panel
+        
         function Element_Callback(this, source, eventdata)
             
             n = length(this.gui.elementPopup.String);
@@ -616,22 +650,6 @@ classdef XeRayGUI < handle
             this.view('element');
             
         end
-        
-        function LineShape_Callback(this, source, eventdata)
-            
-            this.control.lineShape = this.gui.lineShape.String{this.gui.lineShape.Value};
-            this.fitSpectraToElement();
-            this.view('lineshape');
-            
-        end
-        
-        function RemoveBackground_Callback(this, source, eventdata)
-            
-            this.view('background');
-            
-        end
-        
-        %% callbacks - right panel
         
         function StartFitting_Callback(this, source, eventdata)
             
@@ -757,7 +775,7 @@ classdef XeRayGUI < handle
             table.RowName = [table.RowName; strcat('Conc-', num2str(n))];
             
             this.model('inputs', 'layer');
-            this.view('calculate');
+            this.view('alter-layer');
             
         end
         
@@ -987,47 +1005,50 @@ classdef XeRayGUI < handle
         function LoadPara_Callback(this, source, eventdata)
             
             [filename, pathname] = uigetfile('*.xeraypara', 'Load a saved parameter file.');
-            file = fullfile(pathname, filename);
             
-            para = loadjson(file);
-            
-            
-            % load the basic info table
-            this.gui.basicInfoTable.Data = num2cell(para.basic);
-            
-            % load the layer table
-            dat = para.layer;
-            if ~ischar(dat{1})
-                n = length(dat);
-                m = length(dat{1});
-                newdata = cell(n, m);
-                for i = 1 : n
-                    newdata(i, :) = dat{i};
+            if ~isnumeric(filename)
+                file = fullfile(pathname, filename);
+                
+                para = loadjson(file);
+                
+                
+                % load the basic info table
+                this.gui.basicInfoTable.Data = num2cell(para.basic);
+                
+                % load the layer table
+                dat = para.layer;
+                if ~ischar(dat{1})
+                    n = length(dat);
+                    m = length(dat{1});
+                    newdata = cell(n, m);
+                    for i = 1 : n
+                        newdata(i, :) = dat{i};
+                    end
+                    dat = newdata;
                 end
-                dat = newdata;
+                
+                for i = 1 : size(dat, 1)
+                    dat{i, end} = logical(dat{i, end});
+                end
+                
+                this.gui.layerTable.Data = dat;
+                this.assignLayerTableRowName();
+                
+                % load the parameters table
+                dat = num2cell(para.parameter);
+                n = size(dat, 1);
+                
+                for i = 1 : n
+                    dat{i, 4} = logical(dat{i, 4});
+                    dat{i, 5} = logical(dat{i, 5});
+                end
+                
+                this.gui.parametersTable.Data = dat;
+                this.assignParameterTableRowName();
+                
+                this.model('inputs', 'all');
+                this.view('load-inputs');
             end
-            
-            for i = 1 : size(dat, 1)
-                dat{i, end} = logical(dat{i, end});
-            end
-            
-            this.gui.layerTable.Data = dat;
-            this.assignLayerTableRowName();
-            
-            % load the parameters table
-            dat = num2cell(para.parameter);
-            n = size(dat, 1);
-            
-            for i = 1 : n
-                dat{i, 4} = logical(dat{i, 4});
-                dat{i, 5} = logical(dat{i, 5});
-            end
-            
-            this.gui.parametersTable.Data = dat;
-            this.assignParameterTableRowName();
-            
-            this.model('inputs', 'all');
-            this.view('load-inputs');
             
         end
         
@@ -1183,7 +1204,138 @@ classdef XeRayGUI < handle
             
         end
         
+        %% callbacks - element edits
         
+        function CloseElementTab_Callback(this, source, eventdata)
+            
+            this.saveElementProfiles();
+            this.gui.elementEditPanel.Visible = 'off';
+            strings = this.gui.elementPopup.String;
+            this.gui.elementPopup.Value = 1;
+            this.gui.elementPopup.String = [strings{1}; fieldnames(this.ElementProfiles); strings{end}];
+            
+        end
+        
+        function ElementListbox_Callback(this, source, eventdata)
+            
+            this.displayElementTable();
+            
+        end
+        
+        function AddElementButton_Callback(this, source, eventdata)
+            
+            listbox = this.gui.elementListbox;
+            nameinput = this.gui.elementNameInput;
+            
+            % update view
+            
+            lastname = listbox.String{end};
+            if length(lastname) >=3 && strcmp(lastname(1:3), 'new')
+                if length(lastname) == 3
+                    newname = 'new1';
+                else
+                    index = str2double(lastname(4:end)) + 1;
+                    newname = strcat('new', num2str(index));
+                end
+            else
+                newname = 'new';
+            end
+            
+            nameinput.String = newname;
+            listbox.String = [listbox.String; newname];
+            listbox.Value = length(listbox.String);
+            
+            % persist data to current data set
+            table = this.gui.elementTable;
+            this.ElementProfiles.(newname).range = cell2mat(table.Data(1, :));
+            this.ElementProfiles.(newname).peak = cell2mat(table.Data(2, :));
+            this.ElementProfiles.(newname).width = cell2mat(table.Data(3, :));
+            
+        end
+        
+        function RemoveElementButton_Callback(this, source, eventdata)
+            
+            listbox = this.gui.elementListbox;
+            index = listbox.Value;
+            n = length(listbox.String);
+            name = listbox.String(index);
+            if n == 1
+                listbox.Value = [];
+                listbox.String = {};
+            elseif n > 1
+                sel = true(n, 1);
+                sel(index) = false;
+                if index == n
+                    listbox.Value = index - 1;
+                end
+                listbox.String = listbox.String(sel);
+            end
+            
+            this.ElementProfiles = rmfield(this.ElementProfiles, name);
+
+            this.displayElementTable();
+            
+        end
+        
+        function ElementTable_Callback(this, source, eventdata)
+            
+            flag = true;
+            
+            ind = eventdata.Indices;
+            olddata = eventdata.PreviousData;
+            newdata = eventdata.EditData;
+            numeric = ~isnan(source.Data{ind(1), ind(2)});
+            if numeric
+                switch ind(1)
+                    case 1
+                        if source.Data{1, 1} >= source.Data{1, 2}
+                            source.Data{ind(1), ind(2)} = olddata;
+                            flag = false;
+                        end
+                    case 2
+                        if newdata > source.Data{1, 2} || newdata < source.Data{1, 1}
+                            source.Data{ind(1), ind(2)} = olddata;
+                            flag = false;
+                        elseif source.Data{1, 1} == source.Data{1, 2}
+                            source.Data{ind(1), ind(2)} = olddata;
+                            flag = false;
+                        end
+                    case 3
+                        if newdata > source.Data{1, 2} - source.Data{1, 1}
+                            source.Data{ind(1), ind(2)} = olddata;
+                            flag = false;
+                        end
+                end
+            else
+                flag = false;
+            end
+            
+            if flag
+                name = this.gui.elementNameInput.String;
+                table = this.gui.elementTable;
+                this.ElementProfiles.(name).range = cell2mat(table.Data(1, :));
+                this.ElementProfiles.(name).peak = cell2mat(table.Data(2, :));
+                this.ElementProfiles.(name).width = cell2mat(table.Data(3, :));
+            end
+            
+        end
+        
+        function ElementNameInput_Callback(this, source, eventdata)
+            
+            name = source.String;
+            if isvarname(name)
+                listbox = this.gui.elementListbox;
+                index = listbox.Value;
+                listbox.String{index} = name;
+                
+                cellarray = struct2cell(this.ElementProfiles);
+                this.ElementProfiles = cell2struct(cellarray, listbox.String);
+                
+            else
+                this.raiseErrorDialog('Illegal element name.');
+            end
+            
+        end
         
         %% model controls
         
@@ -1236,7 +1388,7 @@ classdef XeRayGUI < handle
                 [newFiles, path] = uigetfile('*.xfluo','Select fluorescence data files', 'MultiSelect', 'on');
             end
             
-            if ~isa(newFiles,'numeric') %got files
+            if ~isnumeric(newFiles) %got files
                 
                 %convert to cell array
                 if isa(newFiles,'char')
@@ -1275,6 +1427,11 @@ classdef XeRayGUI < handle
                     this.data = [this.data, newData];
                     
                 end
+                
+            else
+                
+                oldFiles = this.gui.fileList.String;
+                newFiles = [];
                 
             end
             
@@ -1460,6 +1617,7 @@ classdef XeRayGUI < handle
                     processBasicInfo(this);
                 case 'layer'
                     processLayerStructure(this);
+                    processFittingParameters(this);
                 case {'parameter', 'step'}
                     processFittingParameters(this);
                 case 'confidence'
@@ -1557,10 +1715,34 @@ classdef XeRayGUI < handle
             
         end
         
-        
-        
-        
         %% view controls
+        
+        function displayElementTable(this)
+            
+            listbox = this.gui.elementListbox;
+            
+            if isempty(listbox.String)
+                this.gui.elementNameInput.String = '';
+                this.gui.elementTable.Data = {};
+            else
+                name = listbox.String{listbox.Value};
+                this.gui.elementNameInput.String = name;
+                dat = this.ElementProfiles.(name);
+                tabledata = convertProfileToTableData;
+                
+                this.gui.elementTable.Data = tabledata;
+            end
+            
+            function tabledata = convertProfileToTableData
+                
+                tabledata = cell(3, 2);
+                tabledata(1, :) = num2cell(dat.range);
+                tabledata(2, 1:length(dat.peak)) = num2cell(dat.peak);
+                tabledata(3, 1:length(dat.width)) = num2cell(dat.width);
+                
+            end
+            
+        end
         
         function displayAngles(this)
             
@@ -1632,6 +1814,8 @@ classdef XeRayGUI < handle
                             this.gui.showFit.Value = false;
                             this.gui.showError.Visible = 'on';
                             this.gui.likelihoodChi2.Visible = 'off';
+                            this.gui.loadButton.Enable = 'on';
+                            this.gui.deleteButton.Enable = 'on';
                         case 1
                             set(findall(this.gui.rightPanel, '-property', 'Enable'), 'Enable', 'on');
                             this.gui.fileList.Enable = 'off';
@@ -1639,6 +1823,8 @@ classdef XeRayGUI < handle
                             this.gui.lineShape.Enable = 'off';
                             this.gui.removeBackground.Enable = 'off';
                             this.gui.showCal.Enable = 'on';
+                            this.gui.loadButton.Enable = 'off';
+                            this.gui.deleteButton.Enable = 'off';
                             switch isempty(this.data{this.gui.fileList.Value(1)}.fit)
                                 case false
                                     this.gui.showFit.Enable = 'on';
@@ -1910,6 +2096,16 @@ classdef XeRayGUI < handle
             end
             
             table.RowName = rowNames;
+            
+        end
+        
+        function saveElementProfiles(this)
+            
+            text = savejson('', this.ElementProfiles);
+            file = fullfile(getParentDir(which('XeRayGUI.m')), 'support-files/element-profiles.json');
+            fid = fopen(file, 'w');
+            fprintf(fid, text);
+            fclose(fid);
             
         end
         
