@@ -954,7 +954,6 @@ classdef XeRayGUI < handle
                     fileList.Value = 1;
                     fileList.String = {};
                     angleList.String = {};
-                    this.emptyFigures();
                 end
                 
             end
@@ -1426,34 +1425,38 @@ classdef XeRayGUI < handle
                 
                 function upperPlot()
                     
-                    switch this.const.element
-                        case 'none'
-                            withError = this.gui.showError.Value;
-                            plotWholeSpectra(withError);
-                            emptyFigures(2);
-                        case 'new'
-                            % do nothing
-                        otherwise
-                            switch chosenPlotPara()
-                                case 0
-                                    withError = this.gui.showError.Value;
-                                    withBackground = this.gui.removeBackground.Value;
-                                    plotElementSpectra(withError, withBackground);
-                                case 1
-                                    switch this.gui.likelihoodChi2.Value
-                                        case 1
-                                            plotOneLikelihood();
-                                        case 2
-                                            plotOneChi2();
-                                    end
-                                case 2
-                                    switch this.gui.likelihoodChi2.Value
-                                        case 1
-                                            plotTwoLikelihood();
-                                        case 2
-                                            plotTwoChi2();
-                                    end
-                            end
+                    if isempty(this.gui.fileList.String)
+                        emptyFigures(1);
+                    else
+                        switch this.const.element
+                            case 'none'
+                                withError = this.gui.showError.Value;
+                                plotWholeSpectra(withError);
+                                emptyFigures(2);
+                            case 'new'
+                                % do nothing
+                            otherwise
+                                switch chosenPlotPara()
+                                    case 0
+                                        withError = this.gui.showError.Value;
+                                        withBackground = this.gui.removeBackground.Value;
+                                        plotElementSpectra(withError, withBackground);
+                                    case 1
+                                        switch this.gui.likelihoodChi2.Value
+                                            case 1
+                                                plotOneLikelihood();
+                                            case 2
+                                                plotOneChi2();
+                                        end
+                                    case 2
+                                        switch this.gui.likelihoodChi2.Value
+                                            case 1
+                                                plotTwoLikelihood();
+                                            case 2
+                                                plotTwoChi2();
+                                        end
+                                end
+                        end
                     end
                     
                 end
@@ -1807,10 +1810,18 @@ classdef XeRayGUI < handle
                 case 'empty'
                     switch trigger
                         case 'load-file'
-                            files = varargin{1};
-                            [olds, news, paths] = obtainNewFilesViaArgs(files);
-                            this.model(state, trigger, news, paths);
-                            this.view(state, trigger, olds, news);
+                            if nargin >= 3
+                                files = varargin{1};
+                                [olds, news, paths] = obtainNewFilesViaArgs(files);
+                                this.model(state, trigger, news, paths);
+                                this.view(state, trigger, olds, news);
+                            else
+                                [olds, news, path] = obtainNewFilesViaUI();
+                                if ~isempty(news)
+                                    this.model(state, trigger, news, path);
+                                    this.view(state, trigger, olds, news);
+                                end
+                            end
                         case 'initialize'
                             this.view(state, trigger);
                     end
