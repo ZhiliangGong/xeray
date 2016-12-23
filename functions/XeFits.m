@@ -86,7 +86,6 @@ classdef XeFits < handle
         
         function fp = fullP(this, fittingStart)
             
-            fp = zeros(1, 5);
             fp(this.fixed) = this.lower(this.fixed);
             fp(this.varied) = fittingStart;
             

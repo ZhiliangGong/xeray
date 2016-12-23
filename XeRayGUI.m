@@ -890,7 +890,7 @@ classdef XeRayGUI < handle
                         case 'layer-table'
                             replot('lower');
                         case 'basic-info'
-                            replot('upper');
+                            replot('lower');
                         case 'parameter-table'
                             what = varargin{1};
                             replot(what);
@@ -2560,13 +2560,15 @@ classdef XeRayGUI < handle
             end
             
             function updateStarts()
+                
                 table = this.gui.parametersTable;
                 try
                     dat = this.data{this.gui.fileList.Value(1)}.fit.all.P;
                     table.Data(:, 3) = num2cell(dat');
                 catch EM
-                    disp(EM.message);
+                    warning(EM.message);
                 end
+                
             end
             
             function saveOutput()
@@ -2577,16 +2579,19 @@ classdef XeRayGUI < handle
                 string1 = sprintf('%s%s', string1, '.xerayoutput');
                 string2 = 'Save output text as: ';
                 
-                [fileName, tartetpPth] = uiputfile(string1, string2);
-                file = fullfile(tartetpPth, fileName);
-                text = output.String;
+                [fileName, targetPath] = uiputfile(string1, string2);
                 
-                fid = fopen(file,'w');
-                fprintf(fid,strcat(datestr(datetime),'\n'));
-                for i = 1:length(text)
-                    fprintf(fid, strcat(text{i},'\n'));
+                if ~isnumeric(fileName)
+                    file = fullfile(targetPath, fileName);
+                    text = this.gui.output.String;
+                    
+                    fid = fopen(file,'w');
+                    fprintf(fid, strcat(datestr(datetime), '\n'));
+                    for i = 1:length(text)
+                        fprintf(fid, strcat(text{i}, '\n'));
+                    end
+                    fclose(fid);
                 end
-                fclose(fid);
                 
             end
             
@@ -2616,6 +2621,7 @@ classdef XeRayGUI < handle
             end
             
             function saveDataAndFit()
+                
                 dataset = this.data{this.gui.fileList.Value(1)};
                 
                 if ~isempty(dataset.fit.all)
@@ -2624,13 +2630,27 @@ classdef XeRayGUI < handle
                     [~, file, ~] = fileparts(file);
                     
                     filename = sprintf('%s%s', file, '.xerayfit');
+                    [fileName, targetPath] = uiputfile(filename, 'Save data and fit as: ');
                     
-                    jsondata.angle = num2str(dataset.data.angle);
-                    jsondata.signal = num2str(dataset.data.lineshape.signal);
-                    jsondata.error = num2str(dataset.data.lineshape.signalError);
-                    jsondata.fit = num2str(dataset.system.calculateSignal(dataset.fit.all.P));
-                    
-                    savejson('', jsondata, filename);
+                    if ~isnumeric(fileName)
+                        
+                        jsondata.angle = num2str(dataset.data.angle);
+                        jsondata.signal = num2str(dataset.data.lineshape.signal);
+                        jsondata.error = num2str(dataset.data.lineshape.signalError);
+                        jsondata.fit = num2str(dataset.system.calculateSignal(dataset.fit.all.P));
+                        
+                        text = savejson('', jsondata);
+                        
+                        file = fullfile(targetPath, fileName);
+                        
+                        fid = fopen(file, 'w');
+                        
+                        if fid
+                            fprintf(fid, text);
+                            fclose(fid);
+                        end
+                        
+                    end
                     
                 else
                     
