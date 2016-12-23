@@ -1,7 +1,0 @@
-# config file for XeRay, don't change the order of the files
-
-# atomic scattering factor path
-../atomic-scattering-factor/
-
-# element x-ray profile path
-../support-files/elementEnergy.txt

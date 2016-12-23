@@ -26,10 +26,10 @@ classdef XeRayGUI < handle
             
             function initializeGui()
                 
-                parent = getParentDir(which('XeRay.m'));
+                parent = getParentDir(which('XeRayGUI.m'));
                 this.config = loadjson(fullfile(parent, 'support-files/xeray-config.json'));
                 this.config.ScatteringFactorFolder = fullfile(parent, this.config.ScatteringFactorFolder);
-                this.ElementProfiles = loadjson(fullfile(getParentDir(which('XeRay.m')), 'support-files/element-profiles.json'));
+                this.ElementProfiles = loadjson(fullfile(getParentDir(which('XeRayGUI.m')), 'support-files/element-profiles.json'));
                 
                 set(0, 'units', this.config.units);
                 pix = get(0, 'screensize');

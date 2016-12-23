@@ -22,7 +22,7 @@ classdef XeElementData < handle
                 lineshape = 'Gaussian';
             end
 
-            this.ElementProfiles = loadjson(fullfile(getParentDir(which('XeRay.m')), 'support-files/element-profiles.json'));
+            this.ElementProfiles = loadjson(fullfile(getParentDir(which('XeRayGUI.m')), 'support-files/element-profiles.json'));
             this.updateElement(element, rawdata, lineshape);
 
         end
