@@ -336,7 +336,7 @@ classdef XeRayGUI2 < handle
                     colName = {};
                     columnFormat = {'numeric'};
                     columnWidth = {120};
-                    tableData = {10; 0.024; 7.5; 10.76};
+                    tableData = {10; 7.8; 0.024; 10.76};
                     
                     this.gui.basicInfoTable = uitable(rightPanel, 'Data', tableData, 'ColumnName', colName, ...
                         'ColumnFormat', columnFormat, 'ColumnEditable', true, 'Units','normalized', ...
@@ -349,16 +349,16 @@ classdef XeRayGUI2 < handle
                     
                     rightPanel = this.gui.rightPanel;
                     
-                    rowName = {'1'};
+                    rowName = {'top', 'bottom'};
                     colName = {'Formula', 'ED', 'Depth (A)', 'Delete'};
                     colFormat = {'char', 'numeric', 'numeric', 'logical'};
-                    colWidth = {170, 40, 60, 50};
-                    tableData = {'H2O', 0.334, Inf, false};
+                    colWidth = {130, 40, 60, 50};
+                    heliumEd = 101325 / 8.314 / 298 / 1e3 * 6.02e23 * 1e-27 * 2;
+                    tableData = {'He', heliumEd, Inf, false; 'H2O', 0.334, Inf, false};
                     
                     base = 0.85;
                     
-                    uicontrol(rightPanel,'Style','text','String','Layer Structure:','Units','normalized','HorizontalAlignment','left',...
-                        'Position',[0.025 base 0.8 0.025]);
+                    uicontrol(rightPanel,'Style','text','String','Layer Structure:','Units','normalized','HorizontalAlignment','left', 'Position',[0.025 base 0.8 0.025]);
                     
                     this.gui.layerTable = uitable(rightPanel,'Data', tableData,'ColumnName', colName,...
                         'ColumnFormat', colFormat,'ColumnEditable', true(1, 6), 'Units', 'normalized',...
@@ -375,7 +375,7 @@ classdef XeRayGUI2 < handle
                     
                     rightPanel = this.gui.rightPanel;
                     
-                    rowName = {'Angle-Offset','Scale-Factor','Background','Conc-1'};
+                    rowName = {'Angle-Offset','Scale-Factor','Background', 'Conc-bottom'};
                     colName = {'Min','Max','Start','Fix','Plot'};
                     colFormat = {'numeric','numeric','numeric','logical','logical'};
                     colWidth = {55 55 55 30 30};
@@ -681,6 +681,7 @@ classdef XeRayGUI2 < handle
                             this.gui.showFit.Enable = 'on';
                             this.gui.showFit.Value = 1;
                             replot('lower');
+                            replot('upper');
                             recordFittingResults(0);
                         case 'show-fit'
                             replot('lower');
@@ -990,15 +991,18 @@ classdef XeRayGUI2 < handle
                 this.gui.showFit.Value = false;
                 this.gui.showFit.Enable = 'off';
                 
+                % update layers table
                 table = this.gui.layerTable;
-                table.Data = [{'H2O', 0.334, 1, false}; table.Data;];
-                n = size(table.Data, 1);
-                table.RowName = [num2str(n); table.RowName];
+                table.Data = [table.Data(1, :); {'H2O', 0.334, 1, false}; table.Data(2:end, :)];
+                n = size(table.Data, 1) -2;
+                layerName = strcat('layer-', num2str(n));
+                table.RowName = [table.RowName(1); layerName; table.RowName(2:end)];
                 
                 % update parameters table
                 table = this.gui.parametersTable;
-                table.Data = [table.Data; {0, 0, 0, true, false}];
-                table.RowName = [table.RowName; strcat('Conc-', num2str(n))];
+                table.Data = [table.Data(1:3, :); {0, 0, 0, true, false}; table.Data(4:end, :)];
+                table.RowName = [table.RowName(1:3); strcat('Conc-', num2str(n)); table.RowName(4:end)];
+                
             end
             
             function deleteLayers()
@@ -1010,15 +1014,15 @@ classdef XeRayGUI2 < handle
                 if n
                     sel = ~sel;
                     table.Data = table.Data(sel, :);
-                    table.RowName = table.RowName(n+1: end);
+                    table.RowName = table.RowName(~sel);
                     
-                    % delete the layer from parameters table
+                    % delete the layers from parameters table
                     table = this.gui.parametersTable;
-                    location = length(sel) - find(~sel) + 4;
+                    location = find(~sel) + 3;
                     sel = true(size(table.Data, 1), 1);
                     sel(location) = false;
                     table.Data = table.Data(sel, :);
-                    table.RowName = table.RowName(1:end-n);
+                    table.RowName = table.RowName(sel);
                     
                 end
                 
@@ -1230,7 +1234,7 @@ classdef XeRayGUI2 < handle
                     if length(angles) == 1
                         fineAngleRange = linspace(angles * 0.99, angles * 1.01, 2);
                     else
-                        fineAngleRange = linspace(min(angles), max(angles), 100);
+                        fineAngleRange = linspace(min(angles), max(angles), 50);
                     end
                     
                     calculated = dataset.system.calculateSignalCurve(starts, fineAngleRange);
@@ -1419,7 +1423,7 @@ classdef XeRayGUI2 < handle
                         case 'add-layer'
                             this.view(state, trigger);
                             processInputs();
-                            this.view(state, 'add-layer-update');
+                            %this.view(state, 'add-layer-update');
                         case 'delete-layers'
                             this.view(state, trigger);
                             processInputs();

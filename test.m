@@ -2,7 +2,9 @@
 % this = XeRayGUI(files);
 % a = this.data{1};
 % b = this.data{2};
-
+clc;
+close all;
 clear;
 close all;
-a = XeRayGUI2();
+this = XeRayGUI2();
+a = this;

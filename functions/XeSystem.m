@@ -73,7 +73,10 @@ classdef XeSystem < handle
             
             this.getDensity(n);
             this.getRefractionProperties(n);
-            this.storeLayerIntensity();
+            
+            if this.N >= 2 && this.thickness(1) == Inf && this.thickness(end) == Inf
+                this.storeLayerIntensity();
+            end
 
         end
         
@@ -112,7 +115,10 @@ classdef XeSystem < handle
                 this.electronDensity(sel) = this.electronDensity;
                 this.thickness(sel) = this.thickness;
                 this.density(sel) = this.density;
-                this.layerIntensity(:, sel) = this.layerIntensity;
+                
+                if ~isempty(this.layerIntensity)
+                    this.layerIntensity(:, sel) = this.layerIntensity;
+                end
 
                 this.chemical.makeSpace(position);
                 this.incidence.makeSpace(position);
@@ -221,12 +227,12 @@ classdef XeSystem < handle
             if nargin == 1
                 angles = reshape(this.offsetAngle(), length(this.offsetAngle()), 1);
             else
-                angles = angles - this.offset;
+                angles = angles + this.offset;
                 angles = reshape(angles, length(angles), 1);
             end
             
-            if this.thickness(end) ~= Inf
-                error('The last layer must have infinite thickness.')
+            if this.thickness(end) ~= Inf || this.thickness(1) ~= Inf
+                error('The first and last layer must have infinite thicknesses.');
             end
                         
             slits = this.slit * 1e7; % mm to A
@@ -238,59 +244,61 @@ classdef XeSystem < handle
             
             refractionAngle = this.incidence.getRefractionAngle(angles);
             
-            theta1 = [angles, refractionAngle(:, 1:end-1)];
-            theta2 = refractionAngle;
-            d1 = repmat([0, thick(1:end-1)], m, 1);
-            d2 = repmat([thick(1:end-1), 0], m, 1); % calculate the intensity at the interface for the last layer
+            theta1 = refractionAngle(:, 1:end-1);
+            theta2 = refractionAngle(:, 2:end);
+            d1 = repmat([0, thick(2:end-1)], m, 1); % assume there is already some intensity at the interface - nothing can penetrate an inifinite layer
+            d2 = repmat([thick(2:end-1), 0], m, 1); % treat the layer interface with 0 thickness underneath to obtian the matrix
 
             ratio1 = (theta1 + theta2) / 2 ./ theta1;
             ratio2 = (theta1 - theta2) / 2 ./ theta1;
             expo1 = 1i * pi / this.incidence.wavelength * (theta1 .* d1 + theta2 .* d2);
             expo2 = 1i * pi / this.incidence.wavelength * (theta1 .* d1 - theta2 .* d2);
             
-            M = zeros(m, n, 4);
+            M = zeros(m, n-1, 4);
             M(:, :, 1) = ratio1 .* exp(-expo1);
             M(:, :, 2) = ratio2 .* exp(-expo2);
             M(:, :, 3) = ratio2 .* exp(expo2);
             M(:, :, 4) = ratio1 .* exp(expo1);
             
-            matrices = cell(m, n);
+            matrices = cell(m, n-1);
             for i = 1 : m
-                matrices{i, n} = reshape(M(i, n, :), 2, 2)';
-                for j = n-1 : -1 : 1
+                matrices{i, n-1} = reshape(M(i, n-1, :), 2, 2)';
+                for j = n-2 : -1 : 1
                     matrices{i, j} = reshape(M(i, j, :), 2, 2)' * matrices{i, j+1};
                 end
             end
 
-            tamp = zeros(m, n);
-            ramp = zeros(m, n);
+            tamp = zeros(m, n-1);
+            ramp = zeros(m, n-1);
             
             for i = 1 : m
                 tamp(i, end) = 1 / matrices{i, 1}(1, 1);
             end
 
             for i = 1 : m
-                for j = 1 : n - 1
+                for j = 1 : n - 2
                     tamp(i, j) = matrices{i, j+1}(1, 1) * tamp(i, end);
                     ramp(i, j) = matrices{i, j+1}(2, 1) * tamp(i, end);
                 end
             end
             
-            phaseLength = [thick(1:end-1), 0] / 2;
-            phaseShift = 2 * pi / this.incidence.wavelength * refractionAngle .* repmat(phaseLength, m, 1);
+            % phase of the transmission and reflection amplitudes
+            phaseLength = [thick(2:end-1), 0] / 2;
+            phaseShift = 2 * pi / this.incidence.wavelength * refractionAngle(:, 2:end) .* repmat(phaseLength, m, 1);
             transmission = tamp .* exp( -1i * phaseShift );
             reflection = ramp .* exp( 1i * phaseShift );
 
-            alpha = repmat(angles, 1, n);
-            delta = repmat(this.incidence.dispersion, m, 1);
-            beta = repmat(this.incidence.absorption, m, 1);
+            % attenuation
+            alpha = repmat(angles, 1, n-1);
             
             alpha1 = pi/2;
-            delta1 = repmat(this.emission.dispersion, m, 1);
-            beta1 = repmat(this.emission.absorption, m, 1);
+            delta1 = repmat(this.emission.dispersion(2:end) - this.emission.dispersion(1:end-1), m, 1);
+            beta1 = repmat(this.emission.absorption(2:end) - this.emission.absorption(1:end-1), m, 1);
             
-            p0 = this.incidence.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
+            p0 = this.incidence.wavelength / 4 / pi ./ imag( refractionAngle(:, 2:end) );
             p1 = this.emission.wavelength / 4 / pi ./ imag( sqrt( alpha1.^2 - 2 * delta1 + 2i * beta1 ) );
+            %p0 = this.incidence.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
+            %p1 = this.emission.wavelength / 4 / pi ./ imag( sqrt( alpha1.^2 - 2 * delta1 + 2i * beta1 ) );
             
             location = ~(p1 == Inf);
             
@@ -298,14 +306,14 @@ classdef XeSystem < handle
             penetration(location) = p0(location) .* p1(location) ./ (p0(location) + p1(location));
             
             % intensity below each of the interface
-            d = repmat([0, thick(1:end-1)], m, 1);
+            d = repmat([0, thick(2:end-1)], m, 1);
             attenuation = exp( - d ./ [ones(m, 1), penetration(:, 1:end-1)]);
             attenuation = cumprod(attenuation, 2);
             intensity = abs((transmission + reflection).^2) .* attenuation;
             
-            % integrate for the top thin layers
+            % integrate for thin layers
             location = (penetration == Inf);
-            d = repmat(thick(1:end-1), m, 1);
+            d = repmat(thick(2:end-1), m, 1);
             integralFactor = penetration(:, 1:end-1) .* ( 1 - exp(- d ./ penetration(:, 1:end-1)) );
             integralFactor(location(:, 1:end-1)) = d(location(:, 1:end-1));
             intensity(:, 1:end-1) = intensity(:, 1:end-1) .* integralFactor;
@@ -327,6 +335,7 @@ classdef XeSystem < handle
             intensity(:, end) = intensity(:, end) .* L .* (term0 + term1 - term2);
             
             intensity = intensity / 1e14;
+            intensity = [zeros(m, 1), intensity];
             
         end
         
@@ -338,9 +347,9 @@ classdef XeSystem < handle
             this.offset = P(1);
             int = this.getLayerIntensity(angles);
             
-            conc = fliplr(P(4:end));
+            conc = P(4:end);
             
-            intensity = sum(repmat(conc, length(angles), 1) .* int, 2)' * P(2) + P(3);
+            intensity = sum(repmat(conc, length(angles), 1) .* int(:, 2:end), 2)' * P(2) + P(3);
             
         end
         
@@ -371,7 +380,7 @@ classdef XeSystem < handle
                 this.layerIntensity = this.getLayerIntensity();
             end
             
-            conc = fliplr(P(4:end));
+            conc = P(4:end);
             
             intensity = sum(repmat(conc, length(this.angle), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
             

@@ -221,8 +221,7 @@ classdef XeSignal < handle
                 ub = this.fit.ub();
                 
                 options = optimoptions('lsqnonlin', 'MaxFunEvals', 1e25, 'MaxIter', 1e5, 'Display', 'off');
-                
-                myfun = @(p) ((this.system.calculateSignalWithBounds(p, this.fit.lower, this.fit.upper) - signal) ./ signalError);
+                myfun = @(p) ((this.system.calculateSignalWithBounds(p, this.fit.lower, this.fit.upper) - signal') ./ signalError');
                 
                 [result, chi2] = lsqnonlin(myfun, start, lb, ub, options);
                 P = this.fit.fullP(result);
@@ -246,7 +245,6 @@ classdef XeSignal < handle
                 for i = 1:m
                     
                     para(:, i) = linspace(lb(i), ub(i), n)';
-                    
                     if m == 1
                         parfor j = 1:n
                             par_P = P;
@@ -254,7 +252,7 @@ classdef XeSignal < handle
                             par_para = para;
                             par_P(par_location) = par_para(j);
                             par_sys = sys;
-                            chi2(j, i) = sum(((par_sys.calculateSignal(par_P) - signal) ./ signalError).^2);
+                            chi2(j, i) = sum(((par_sys.calculateSignal(par_P) - signal') ./ signalError').^2);
                         end
                     else
                         parfor j = 1:n
@@ -268,7 +266,7 @@ classdef XeSignal < handle
                             lbs = par_lower(par_lower ~= par_upper);
                             ubs = par_upper(par_lower ~= par_upper);
                             par_sys = sys;
-                            myfun = @(p) ((par_sys.calculateSignalWithBounds(p, par_lower, par_upper) - signal) ./ signalError);
+                            myfun = @(p) ((par_sys.calculateSignalWithBounds(p, par_lower, par_upper) - signal') ./ signalError');
                             [~, chi2(j,i)] = lsqnonlin(myfun, p, lbs, ubs, options);
                         end
                     end
@@ -292,7 +290,8 @@ classdef XeSignal < handle
                             P(location(1)) = para(i, 1);
                             for j = 1 : n
                                 P(location(2)) = para(j, 2);
-                                chi2(i, j) = sum(((this.system.calculateSignal(P) - signal) ./ signalError).^2);
+                                this.system.calculateSignal(P);
+                                chi2(i, j) = sum(((this.system.calculateSignal(P) - signal') ./ signalError').^2);
                             end
                         end
                         two{1, 2}.chi2 = chi2;

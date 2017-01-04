@@ -152,8 +152,15 @@ classdef XeRefraction < handle
         function refractionAngle = getRefractionAngle(this, angle)
             
             m = length(angle);
+            angle = reshape(angle, m, 1);
+            
             n = length(this.dispersion);
-            refractionAngle = sqrt(repmat(angle, 1, n).^2 - 2 * repmat(this.dispersion, m, 1) + 2i * repmat(this.absorption, m, 1));
+            dDelta = this.dispersion(2:end) - this.dispersion(1:end-1);
+            dBeta = this.absorption(2:end) - this.absorption(1:end-1);
+            
+            refracted = sqrt( repmat(angle, 1, n-1).^2 - 2 * repmat(dDelta, m, 1) + 2i * repmat(dBeta, m, 1) );
+            
+            refractionAngle = [angle, refracted];
             
         end
         
