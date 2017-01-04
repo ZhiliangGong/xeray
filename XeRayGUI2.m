@@ -336,7 +336,7 @@ classdef XeRayGUI2 < handle
                     colName = {};
                     columnFormat = {'numeric'};
                     columnWidth = {120};
-                    tableData = {10; 7.8; 0.024; 10.76};
+                    tableData = {20; 7.8; 0.1; 10.76};
                     
                     this.gui.basicInfoTable = uitable(rightPanel, 'Data', tableData, 'ColumnName', colName, ...
                         'ColumnFormat', columnFormat, 'ColumnEditable', true, 'Units','normalized', ...
@@ -353,8 +353,8 @@ classdef XeRayGUI2 < handle
                     colName = {'Formula', 'ED', 'Depth (A)', 'Delete'};
                     colFormat = {'char', 'numeric', 'numeric', 'logical'};
                     colWidth = {130, 40, 60, 50};
-                    heliumEd = 101325 / 8.314 / 298 / 1e3 * 6.02e23 * 1e-27 * 2;
-                    tableData = {'He', heliumEd, Inf, false; 'H2O', 0.334, Inf, false};
+                    %heliumEd = 101325 / 8.314 / 298 / 1e3 * 6.02e23 * 1e-27 * 2;
+                    tableData = {'CH2', 0.26, Inf, false; 'H2O', 0.334, Inf, false};
                     
                     base = 0.85;
                     

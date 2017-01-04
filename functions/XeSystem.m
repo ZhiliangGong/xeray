@@ -382,7 +382,7 @@ classdef XeSystem < handle
             
             conc = P(4:end);
             
-            intensity = sum(repmat(conc, length(this.angle), 1) .* this.layerIntensity, 2)' * P(2) + P(3);
+            intensity = sum(repmat(conc, length(this.angle), 1) .* this.layerIntensity(:, 2:end), 2)' * P(2) + P(3);
             
         end
         

@@ -20,10 +20,10 @@ classdef XeSignalRawData < handle
             
             switch angleType
                 case 'radian'
-                    this.angle = asin(data(:, 1) * 1.2398 / 4 / pi);
+                    this.angle = asin(data(:, 1) * 0.61992 / 4 / pi);
                     %this.angle = data(:, 1);
                 case 'qz'
-                    this.angle = asin(data(:, 1) * 1.2398 / 4 / pi);
+                    this.angle = asin(data(:, 1) * 0.61992 / 4 / pi);
             end
             
             this.signal = data(:, 2);

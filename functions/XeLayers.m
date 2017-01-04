@@ -224,8 +224,8 @@ classdef XeLayers < handle
                 options = optimoptions('lsqnonlin', 'MaxFunEvals', 1e25, 'MaxIter', 1e5, 'Display', 'off');
                 
                 myfun = @(p) ((this.system.calculateSignalWithBounds(p, this.fit.lower, this.fit.upper) - signal) ./ signalError);
-                
                 [result, chi2] = lsqnonlin(myfun, start, lb, ub, options);
+                
                 P = this.fit.fullP(result);
                 
                 all0.parameters = parameters;
