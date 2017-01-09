@@ -336,7 +336,7 @@ classdef XeRayGUI2 < handle
                     colName = {};
                     columnFormat = {'numeric'};
                     columnWidth = {120};
-                    tableData = {20; 7.8; 0.1; 10.76};
+                    tableData = {20; 14.164; 0.02; 13};
                     
                     this.gui.basicInfoTable = uitable(rightPanel, 'Data', tableData, 'ColumnName', colName, ...
                         'ColumnFormat', columnFormat, 'ColumnEditable', true, 'Units','normalized', ...
