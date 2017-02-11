@@ -938,6 +938,12 @@ classdef XeRayGUI < handle
                         case 'remove-element'
                             removeElement();
                     end
+                case 'any'
+                    switch trigger
+                        case 'output'
+                            message = varargin{1};
+                            appendToOutput(message);
+                    end
             end
             
             % view functions
@@ -1298,19 +1304,56 @@ classdef XeRayGUI < handle
                 
                 sel = cell2mat(table.Data(:, end));
                 n = sum(sel);
+                m = length(sel);
                 if n
                     sel = ~sel;
                     table.Data = table.Data(sel, :);
-                    table.RowName = table.RowName(~sel);
+                    table.RowName = layerTableRowNames(m - n);
                     
                     % delete the layers from parameters table
                     table = this.gui.parametersTable;
-                    location = find(~sel) + 3;
+                    location = find(~sel) + 2;
                     sel = true(size(table.Data, 1), 1);
                     sel(location) = false;
                     table.Data = table.Data(sel, :);
-                    table.RowName = table.RowName(sel);
-                    
+                    table.RowName = parameterTableNames(m - n);
+                end
+                
+                function names = layerTableRowNames(n)
+                    names = cell(n, 1);
+                    if n < 2
+                        error('number of layers must be equal or larger than 2');
+                    else
+                        for i = 1 : n
+                            switch i
+                                case 1
+                                    names{i} = 'bottom';
+                                case n
+                                    names{i} = 'top';
+                                otherwise
+                                    names{i} = ['layer-', num2str(i-1)];
+                            end
+                        end
+                        names = flip(names);
+                    end
+                end
+                
+                function names = parameterTableNames(n)
+                    % n is the number of layers
+                    names = {n+2, 1};
+                    if n < 2
+                        error('number of layers must be equal or larger than 2');
+                    else
+                        for i = 1 : n
+                            if i == 1
+                                names{i} = 'Conc-bottom';
+                            elseif i ~= n
+                                names{i} = ['Conc-', num2str(i-1)];
+                            end
+                        end
+                        names(n:n+2) = {'Background'; 'Scale-Factor'; 'Angle-Offset'};
+                        names = flip(names);
+                    end
                 end
                 
             end
@@ -1337,7 +1380,7 @@ classdef XeRayGUI < handle
                 
                 text = cell(7+m, 1);
                 
-                text{1} = '--------------------------------------------------------------------';
+                text{1} = repmat('-', 1, 68);
                 text{2} = sprintf('%s %s', '#Time stamp:', datestr(datetime));
                 text{3} = sprintf('%s%s%s', '#Fitted parameters: (', catStringCellArrayWithComma(fits.one.parameters), ')');
                 text{4} = '';
@@ -1366,6 +1409,15 @@ classdef XeRayGUI < handle
                 
                 this.gui.output.String = text;
                 
+            end
+            
+            function appendToOutput(messageArray)
+                oldtext = this.gui.output.String;
+                pretext = cell(3, 1);
+                pretext{1} = repmat('-', 1, 68);
+                pretext{2} = sprintf('%s %s', '#Time stamp:', datestr(datetime));
+                pretext{3} = '';
+                this.gui.output.String = [pretext; messageArray; oldtext];
             end
             
             function addElement()
@@ -2185,6 +2237,10 @@ classdef XeRayGUI < handle
                             flag = false;
                             table.Data{ind(1), ind(2)} = false;
                             raiseErrorDialog('Last layer cannot be deleted.');
+                        elseif ind(1) == 1
+                            flag = false;
+                            table.Data{ind(1), ind(2)} = false;
+                            raiseErrorDialog('First layer cannot be deleted.');
                         end
                 end
                 
@@ -2579,8 +2635,9 @@ classdef XeRayGUI < handle
                 try
                     dat = this.data{this.gui.fileList.Value(1)}.fit.all.P;
                     table.Data(:, 3) = num2cell(dat');
-                catch EM
-                    warning(EM.message);
+                catch
+                    messageArray = {'Operation error:'; 'Can only update starting values to the fitted values after fitting current dataset.'};
+                    this.view('any', 'output', messageArray);
                 end
                 
             end
