@@ -37,7 +37,10 @@ classdef XeRayGUI < handle
                     this.config.window(4) = pix(4)*0.85;
                 end
                 
-                this.handles = figure('Visible','on','Name','XeRay','NumberTitle','off','Units','pixels', 'Position', this.config.window, 'Resize', 'on');
+                this.handles = figure('Visible','off','Name','XeRay','NumberTitle','off','Units','pixels', 'Position', this.config.window, 'Resize', 'on');
+                
+                movegui(this.handles, 'center');
+                this.handles.Visible = 'on';
                 
                 this.const = XeRayControl();
                 
@@ -505,7 +508,7 @@ classdef XeRayGUI < handle
                     colName = {};
                     columnFormat = {'numeric'};
                     columnWidth = {120};
-                    tableData = {10; 0.024; 10.76};
+                    tableData = {10; 0.04; 10.76};
                     
                     this.gui.basicInfoTable = uitable(rightPanel, 'Data', tableData, 'ColumnName', colName, ...
                         'ColumnFormat', columnFormat, 'ColumnEditable', true, 'Units','normalized', ...
@@ -547,7 +550,7 @@ classdef XeRayGUI < handle
                     colName = {'Min','Max','Start','Fix','Plot'};
                     colFormat = {'numeric','numeric','numeric','logical','logical'};
                     colWidth = {55 55 55 30 30};
-                    tableData = {-0.0001, 0.0001, 0, false, false; 1, 1, 1, true, false; 1, 1, 1, true, false; 0, 0, 0, true, false};
+                    tableData = {-0.0001, 0.0001, 0, false, false; 1, 1, 1, true, false; 0, 0, 0, true, false; 0, 0, 0, true, false};
                     
                     this.gui.parametersTableTitle = uicontrol(rightPanel,'Style','text','String','Fitting Parameters:','Units','normalized','HorizontalAlignment','left', 'Position', [0.025 0.625 0.8 0.025]);
                     
