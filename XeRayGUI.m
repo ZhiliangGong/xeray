@@ -20,10 +20,6 @@ classdef XeRayGUI < handle
             
             initializeGui();
             
-            if nargin == 1
-                this.control('load-file', filenames);
-            end
-            
             function initializeGui()
                 
                 parent = getParentDir(which('XeRayGUI.m'));
@@ -44,282 +40,10 @@ classdef XeRayGUI < handle
                 
                 this.const = XeRayControl();
                 
-                createController();
                 createView();
-                connectViewAndController();
+                createController();
                 
                 this.control('initialize');
-                
-            end
-            
-            function createController()
-                
-                %% callbacks - left panel
-                this.call.file = @FileList_Callback;
-                this.call.angle = @AngleList_Callback;
-                this.call.delete = @DeleteButton_Callback;
-                this.call.load = @LoadButton_Callback;
-                
-                function FileList_Callback(varargin)
-                    
-                    this.control('file');
-                    
-                end
-                
-                function AngleList_Callback(varargin)
-                    
-                    this.control('angle');
-                    
-                end
-                
-                function DeleteButton_Callback(varargin)
-                    
-                    this.control('delete-file');
-                    
-                end
-                
-                function LoadButton_Callback(varargin)
-                    
-                    this.control('load-file');
-                    
-                end
-                
-                %% callbacks - plot control
-                
-                this.call.showError = @ShowError_Callback;
-                this.call.lineShape = @LineShape_Callback;
-                this.call.removeBackground = @RemoveBackground_Callback;
-                
-                function ShowError_Callback(varargin)
-                    
-                    this.control('show-error');
-                    
-                end
-                
-                function LineShape_Callback(varargin)
-                    
-                    this.control('line-shape');
-                    
-                end
-                
-                function RemoveBackground_Callback(varargin)
-                    
-                    this.control('remove-background');
-                    
-                end
-                
-                %% callbacks - right panel
-                
-                this.call.element = @Element_Callback;
-                this.call.startFitting = @StartFitting_Callback;
-                this.call.showCal = @ShowCal_Callback;
-                this.call.basicInfo = @BasicInfo_Callback;
-                this.call.likelihoodChi2 = @LikelihoodChi2_Callback;
-                this.call.showFit = @ShowFit_Callback;
-                this.call.confidence = @ConfidenceInput_Callback;
-                
-                function Element_Callback(varargin)
-                    
-                    this.control('switch-element');
-                    
-                end
-                
-                function StartFitting_Callback(varargin)
-                    
-                    this.control('start-fitting');
-                    
-                end
-                
-                function ShowCal_Callback(varargin)
-                    
-                    this.control('show-cal');
-                    
-                end
-                
-                function BasicInfo_Callback(~, eventdata)
-                    
-                    this.control('basic-info', eventdata);
-                    
-                end
-                
-                function LikelihoodChi2_Callback(varargin)
-                    
-                    this.view('likelihood-chi2');
-                    
-                end
-                
-                function ShowFit_Callback(varargin)
-                    
-                    this.control('show-fit');
-                    
-                end
-                
-                function ConfidenceInput_Callback(varargin)
-                    
-                    this.control('confidence-input');
-                    
-                end
-                
-                %% callbacks - table related
-                
-                this.call.layer = @LayerTable_Callback;
-                this.call.addLayer = @AddLayer_Callback;
-                this.call.deleteLayers = @DeleteLayers_Callback;
-                this.call.parametersTable = @ParametersTable_Callback;
-                
-                function LayerTable_Callback(~, eventdata)
-                    
-                    this.control('layer-table', eventdata);
-                    
-                end
-                
-                function AddLayer_Callback(varargin)
-                    
-                    this.control('add-layer');
-                    
-                end
-                
-                function DeleteLayers_Callback(varargin)
-                    
-                    % delete the layer from layer table
-                    
-                    this.control('delete-layers');
-                    
-                end
-                
-                function ParametersTable_Callback(~, eventdata)
-                    
-                    this.control('parameter-table', eventdata);
-                    
-                end
-                
-                %% callbacks - fitting related
-                
-                this.call.loadParameters = @LoadParameters_Callback;
-                this.call.saveParameters = @SaveParameters_Callback;
-                this.call.stepInput = @StepInput_Callback;
-                this.call.fit = @FitButton_Callback;
-                this.call.updateStarts = @UpdateStartButton_Callback;
-                
-                function LoadParameters_Callback(varargin)
-                    
-                    this.control('load-parameters');
-                    
-                end
-                
-                function SaveParameters_Callback(varargin)
-                    
-                    this.control('save-parameters');
-                    
-                end
-                
-                function StepInput_Callback(varargin)
-                    
-                    this.control('step-input');
-                    
-                end
-                
-                function FitButton_Callback(varargin)
-                    
-                    this.control('fit');
-                    
-                end
-                
-                function UpdateStartButton_Callback(varargin)
-                    
-                    this.control('update-start');
-                    
-                end
-                
-                %% callbacks - saving functions
-                
-                this.call.saveOutput = @SaveOutputTextButton_Callback;
-                this.call.saveUpperFigure = @SaveUpperFigureButton_Callback;
-                this.call.saveLowerFigure = @SaveLowerFigureButton_Callback;
-                this.call.saveDataAndFit = @SaveDataAndFitButton_Callback;
-                this.call.clear = @ClearButton_Callback;
-                this.call.record = @RecordFittingButton_Callback;
-                
-                function SaveOutputTextButton_Callback(varargin) %save text output
-                    
-                    this.control('save-output');
-                    
-                end
-                
-                function SaveUpperFigureButton_Callback(varargin) %save figure one
-                    
-                    this.control('save-upper-figure');
-                    
-                end
-                
-                function SaveLowerFigureButton_Callback(varargin) %save figure one
-                    
-                    this.control('save-lower-figure');
-                    
-                end
-                
-                function SaveDataAndFitButton_Callback(varargin)
-                    
-                    this.control('save-data');
-                    
-                end
-                
-                function ClearButton_Callback(varargin)
-                    
-                    this.control('clear-output');
-                    
-                end
-                
-                function RecordFittingButton_Callback(varargin)
-                    
-                    this.control('record-results');
-                    
-                end
-                
-                %% callbacks - element edits
-                
-                this.call.closeElementTab = @CloseElementTab_Callback;
-                this.call.elementListbox = @ElementListbox_Callback;
-                this.call.addElement = @AddElementButton_Callback;
-                this.call.elementTable = @ElementTable_Callback;
-                this.call.removeElement = @RemoveElementButton_Callback;
-                this.call.elementNameInput = @ElementNameInput_Callback;
-                
-                function CloseElementTab_Callback(varargin)
-                    
-                    this.control('close-tab');
-                    
-                end
-                
-                function ElementListbox_Callback(varargin)
-                    
-                    this.control('element-listbox');
-                    
-                end
-                
-                function AddElementButton_Callback(varargin)
-                    
-                    this.control('add-element');
-                    
-                end
-                
-                function RemoveElementButton_Callback(varargin)
-                    
-                    this.control('remove-element');
-                    
-                end
-                
-                function ElementTable_Callback(this, source, eventdata)
-                    
-                    this.control('edit-element', source, eventdata);
-                    
-                end
-                
-                function ElementNameInput_Callback(this, source, varargin)
-                    
-                    this.control('edit-element-name', source);
-                    
-                end
                 
             end
             
@@ -521,7 +245,7 @@ classdef XeRayGUI < handle
                     
                     rightPanel = this.gui.rightPanel;
                     
-                    rowName = {'top', 'bottom'};
+                    rowName = {'Top', 'Bottom'};
                     colName = {'Formula', 'ED', 'Depth (A)', 'Delete'};
                     colFormat = {'char', 'numeric', 'numeric', 'logical'};
                     colWidth = {130, 40, 60, 50};
@@ -546,7 +270,7 @@ classdef XeRayGUI < handle
                     
                     rightPanel = this.gui.rightPanel;
                     
-                    rowName = {'Angle-Offset','Scale-Factor','Background', 'Conc-bottom'};
+                    rowName = {'Angle-Offset','Scale-Factor','Background', 'Conc-Bottom'};
                     colName = {'Min','Max','Start','Fix','Plot'};
                     colFormat = {'numeric','numeric','numeric','logical','logical'};
                     colWidth = {55 55 55 30 30};
@@ -630,59 +354,65 @@ classdef XeRayGUI < handle
                 
             end
             
-            function connectViewAndController()
+            function createController()
                 
-                % left panel
-                this.gui.fileList.Callback = this.call.file;
-                this.gui.loadButton.Callback = this.call.load;
-                this.gui.deleteButton.Callback = this.call.delete;
-                this.gui.angleList.Callback = this.call.angle;
+                %% left panel
+                this.gui.fileList.Callback = @(varargin) this.control('file');
+                this.gui.loadButton.Callback = @(varargin) this.control('load-file');
+                this.gui.deleteButton.Callback = @(varargin) this.control('delete-file');
+                this.gui.angleList.Callback = @(varargin) this.control('angle');
                 
-                % middle panel
-                this.gui.showError.Callback = this.call.showError;
-                this.gui.likelihoodChi2.Callback = this.call.likelihoodChi2;
-                this.gui.showFit.Callback = this.call.showFit;
-                this.gui.showCal.Callback = this.call.showCal;
+                %% plotting
+                this.gui.showError.Callback = @(varargin) this.control('show-error');
+                this.gui.likelihoodChi2.Callback = @(varargin) this.control('likelihood-chi2');
+                this.gui.showFit.Callback = @(varargin) this.control('show-fit');
+                this.gui.showCal.Callback = @(varargin) this.control('show-cal');
                 
-                % element edit panel
-                this.gui.closeTabButton.Callback = this.call.closeElementTab;
-                this.gui.elementListbox.Callback = this.call.elementListbox;
-                this.gui.elementNameInput.Callback = this.call.elementNameInput;
-                this.gui.elementTable.CellEditCallback = this.call.elementTable;
-                this.gui.addElement.Callback = this.call.addElement;
-                this.gui.removeElement.Callback = this.call.removeElement;
+                %% data control
+                this.gui.lineShape.Callback = @(varargin) this.control('line-shape');
+                this.gui.elementPopup.Callback = @(varargin) this.control('switch-element');
+                this.gui.removeBackground.Callback = @(varargin) this.control('remove-background');
+                this.gui.startFitting.Callback = @(varargin) this.control('start-fitting');
                 
-                % data control
-                this.gui.elementPopup.Callback = this.call.element;
-                this.gui.lineShape.Callback = this.call.lineShape;
-                this.gui.removeBackground.Callback = this.call.removeBackground;
-                this.gui.startFitting.Callback = this.call.startFitting;
+                %% right panel
+                this.gui.basicInfoTable.CellEditCallback = @(~, eventdata, varargin) this.control('basic-info', eventdata);
+                this.gui.layerTable.CellEditCallback = @(~, eventdata, varargin) this.control('layer-table', eventdata);
                 
-                % table callbacks
-                this.gui.basicInfoTable.CellEditCallback = this.call.basicInfo;
                 
-                this.gui.layerTable.CellEditCallback = this.call.layer;
-                this.gui.addLayer.Callback = this.call.addLayer;
-                this.gui.deleteLayer.Callback = this.call.deleteLayers;
+                %% table
+                this.gui.addLayer.Callback = @(varargin) this.control('add-layer');
+                this.gui.deleteLayer.Callback = @(varargin) this.control('delete-layers');
+                this.gui.parametersTable.CellEditCallback = @(~, eventdata, varargin) this.control('parameter-table', eventdata);
                 
-                this.gui.parametersTable.CellEditCallback = this.call.parametersTable;
+                %% fitting
+                this.gui.confidenceInput.Callback = @(varargin) this.control('confidence-input');
+                this.gui.loadPara.Callback = @(varargin) this.control('load-parameters');
+                this.gui.savePara.Callback = @(varargin) this.control('save-parameters');
+                this.gui.recordFitting.Callback = @(varargin) this.control('record-results');
+                this.gui.fitButton.Callback = @(varargin) this.control('fit');
+                this.gui.stepInput.Callback = @(varargin) this.control('step-input');
+                this.gui.updateStartButton.Callback = @(varargin) this.control('update-start');
                 
-                % fitting controls
-                this.gui.loadPara.Callback = this.call.loadParameters;
-                this.gui.savePara.Callback = this.call.saveParameters;
-                this.gui.recordFitting.Callback = this.call.record;
-                this.gui.fitButton.Callback = this.call.fit;
-                this.gui.stepInput.Callback = this.call.stepInput;
-                this.gui.confidenceInput.Callback = this.call.confidence;
-                this.gui.updateStartButton.Callback = this.call.updateStarts;
+                %% saving
+                this.gui.saveData.Callback = @(varargin) this.control('save-data');
+                this.gui.saveUpperFigure.Callback = @(varargin) this.control('save-upper-figure');
+                this.gui.saveLowerFigure.Callback = @(varargin) this.control('save-lower-figure');
+                this.gui.saveOutput.Callback = @(varargin) this.control('save-output');
+                this.gui.clearOutput.Callback = @(varargin) this.control('clear-output');
                 
-                % output and save
-                this.gui.saveData.Callback = this.call.saveDataAndFit;
-                this.gui.saveUpperFigure.Callback = this.call.saveUpperFigure;
-                this.gui.saveLowerFigure.Callback = this.call.saveLowerFigure;
-                this.gui.saveOutput.Callback = this.call.saveOutput;
-                this.gui.clearOutput.Callback = this.call.clear;
+                %% element edits
+                this.gui.closeTabButton.Callback = @(varargin) this.control('close-tab');
+                this.gui.elementListbox.Callback = @(varargin) this.control('element-listbox');
+                this.gui.elementNameInput.Callback = @(source, varargin) this.control('edit-element-name', source);
+                this.gui.elementTable.CellEditCallback = @(source, eventdata, varargin) this.control('edit-element', source, eventdata);
+                this.gui.addElement.Callback = @(varargin) this.control('add-element');
+                this.gui.removeElement.Callback = @(varargin) this.control('remove-element');
                 
+                
+            end
+            
+            if nargin == 1
+                this.control('load-file', filenames);
             end
             
         end
@@ -976,6 +706,9 @@ classdef XeRayGUI < handle
                 this.gui.showFit.Enable = 'off';
                 this.gui.showCal.Enable = 'off';
                 
+                this.gui.loadButton.Enable = 'on';
+                this.gui.deleteButton.Enable = 'on';
+                
                 this.gui.startFitting.Value = 0;
                 
             end
@@ -993,8 +726,8 @@ classdef XeRayGUI < handle
                 this.gui.showFit.Value = false;
                 this.gui.showError.Visible = 'on';
                 this.gui.likelihoodChi2.Visible = 'off';
-                this.gui.loadButton.Enable = 'on';
-                this.gui.deleteButton.Enable = 'on';
+                this.gui.loadButton.Enable = 'off';
+                this.gui.deleteButton.Enable = 'off';
                 
             end
             
@@ -1006,6 +739,7 @@ classdef XeRayGUI < handle
                     antiStatus = 'on';
                     this.gui.showFit.Enable = 'off';
                     this.gui.showFit.Value = 0;
+                    this.gui.parametersTable.Data(:, end) = num2cell(false(size(this.gui.parametersTable.Data, 1), 1));
                 end
                 
                 set(findall(this.gui.rightPanel, '-property', 'Enable'), 'Enable', status);
@@ -1016,8 +750,8 @@ classdef XeRayGUI < handle
                 this.gui.elementPopup.Enable = antiStatus;
                 this.gui.lineShape.Enable = antiStatus;
                 this.gui.removeBackground.Enable = antiStatus;
-                this.gui.loadButton.Enable = antiStatus;
-                this.gui.deleteButton.Enable = antiStatus;
+%                 this.gui.loadButton.Enable = antiStatus;
+%                 this.gui.deleteButton.Enable = antiStatus;
                 
             end
             
@@ -1127,8 +861,11 @@ classdef XeRayGUI < handle
                 
                 rowNames = cell(1, n);
                 for i = 1 : n
-                    rowNames{i} = num2str(i);
+                    rowNames{i} = ['Layer-', num2str(n-i+1)];
                 end
+                
+                rowNames{1} = 'Top';
+                rowNames{end} = 'Bottom';
                 
                 table.RowName = rowNames;
                 
@@ -1141,9 +878,11 @@ classdef XeRayGUI < handle
                 rowNames = cell(n, 1);
                 rowNames(1:3) = {'Angle-Offset', 'Scale-Factor', 'Background'};
                 
-                for i = 4 : n
+                for i = 4 : n-1
                     rowNames{i} = strcat('Conc-', num2str(i-3));
                 end
+                
+                rowNames{end} = 'Conc-Bottom';
                 
                 table.RowName = rowNames;
                 
@@ -1291,7 +1030,7 @@ classdef XeRayGUI < handle
                 table = this.gui.layerTable;
                 table.Data = [table.Data(1, :); {'H2O', 0.334, 1, false}; table.Data(2:end, :)];
                 n = size(table.Data, 1) -2;
-                layerName = strcat('layer-', num2str(n));
+                layerName = strcat('Layer-', num2str(n));
                 table.RowName = [table.RowName(1); layerName; table.RowName(2:end)];
                 
                 % update parameters table
@@ -1330,11 +1069,11 @@ classdef XeRayGUI < handle
                         for i = 1 : n
                             switch i
                                 case 1
-                                    names{i} = 'bottom';
+                                    names{i} = 'Bottom';
                                 case n
-                                    names{i} = 'top';
+                                    names{i} = 'Top';
                                 otherwise
-                                    names{i} = ['layer-', num2str(i-1)];
+                                    names{i} = ['Layer-', num2str(i-1)];
                             end
                         end
                         names = flip(names);
@@ -1349,7 +1088,7 @@ classdef XeRayGUI < handle
                     else
                         for i = 1 : n
                             if i == 1
-                                names{i} = 'Conc-bottom';
+                                names{i} = 'Conc-Bottom';
                             elseif i ~= n
                                 names{i} = ['Conc-', num2str(i-1)];
                             end
@@ -1904,6 +1643,8 @@ classdef XeRayGUI < handle
                         case 'switch-element'
                             this.const.element = 'none';
                             this.view(state, trigger);
+                        otherwise
+                            disp(['Trigger: ', trigger, ' is not found for State: ', state]);
                     end
                 case 'element-spectra'
                     switch trigger
@@ -1929,6 +1670,8 @@ classdef XeRayGUI < handle
                             this.view(state, trigger);
                         case 'start-fitting'
                             this.view(state, trigger);
+                        otherwise
+                            disp(['Trigger: ', trigger, ' is not found for State: ', state]);
                     end
                 case 'fitting'
                     switch trigger
@@ -2003,6 +1746,8 @@ classdef XeRayGUI < handle
                             end
                         case 'confidence-input'
                             this.view(state, 'confidence-input');
+                        otherwise
+                            disp(['Trigger: ', trigger, ' is not found for State: ', state]);
                     end
                 case 'edit-element'
                     switch trigger
@@ -2686,6 +2431,9 @@ classdef XeRayGUI < handle
             
             function saveLowerFigure()
                 fileName = this.gui.fileList.String{this.gui.fileList.Value};
+                index = find(fileName=='.');
+                index = index(end);
+                fileName = fileName(1:index-1);
                 theFigure = figure;
                 copyobj(this.gui.ax2, theFigure);
                 ax = gca;

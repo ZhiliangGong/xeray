@@ -18,7 +18,7 @@ classdef XeRawData < handle
         end
 
         function loadData(this, file)
-
+            
             rawdata = importdata(file);
             line = rawdata.textdata{1};
             if ~strcmpi(line(1:12),'E(kev)\Angle')
