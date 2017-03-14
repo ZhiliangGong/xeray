@@ -764,7 +764,6 @@ classdef XeRayGUI < handle
                     
                     para = loadjson(file);
                     
-                    
                     % load the basic info table
                     this.gui.basicInfoTable.Data = num2cell(para.basic);
                     
