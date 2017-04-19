@@ -341,6 +341,8 @@ classdef XeLayers < handle
             end
             
         end
+        
+        % plotting
 
         function plotSignal(this, ax, sel_angle)
 
@@ -356,7 +358,7 @@ classdef XeLayers < handle
             xdata = this.data.angle(sel_angle);
             ydata = this.data.lineshape.signal(sel_angle);
             yerror = this.data.lineshape.signalError(sel_angle);
-            errorbar(ax, xdata, ydata, yerror, 'o-', 'markersize', 8, 'linewidth', 2);
+            errorbar(ax, xdata, ydata, yerror, 'o', 'markersize', 8, 'linewidth', 2);
             
             if ~isempty(this.fit.all)
                 hold(ax, 'on');
@@ -364,6 +366,26 @@ classdef XeLayers < handle
                 plot(ax, fineAngle, this.system.calculateSignalCurve(this.fit.all.P, fineAngle), 'r-', 'linewidth', 2);
                 hold(ax,'off');
             end
+            
+            xlabel(ax, 'Angle (deg.)', 'fontsize', 16);
+            ylabel(ax, 'Integrated Signal (a.u.)', 'fontsize', 16);
+            set(ax, 'fontsize', 14);
+
+        end
+        
+        function plotSignalOnly(this, ax)
+
+            if nargin == 1
+                figure;
+                ax = gca;
+            end
+            
+            sel_angle = 1 : length(this.data.angle);
+            
+            xdata = this.data.angle(sel_angle);
+            ydata = this.data.lineshape.signal(sel_angle);
+            yerror = this.data.lineshape.signalError(sel_angle);
+            errorbar(ax, xdata, ydata, yerror, 'o', 'markersize', 8, 'linewidth', 2);
             
             xlabel(ax, 'Angle (deg.)', 'fontsize', 16);
             ylabel(ax, 'Integrated Signal (a.u.)', 'fontsize', 16);
