@@ -389,5 +389,15 @@ classdef XeLayers < handle
         end
         
     end
+    
+    methods (Static)
+        
+        function surfConc = mM2SurfConc(mM, thick)
+            
+            surfConc = thick * 1e-9 * (1e-8)^2 * mM * 1e-3 * 6.0221409e+23;
+            
+        end
+        
+    end
 
 end

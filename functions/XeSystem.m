@@ -237,7 +237,7 @@ classdef XeSystem < handle
                         
             slits = this.slit * 1e7; % mm to A
             foots = this.foot * 1e7; % mm to A
-            thick = this.thickness; % nm to A
+            thick = this.thickness;
             
             m = length(angles);
             n = this.N;
@@ -297,8 +297,6 @@ classdef XeSystem < handle
             
             p0 = this.incidence.wavelength / 4 / pi ./ imag( refractionAngle(:, 2:end) );
             p1 = this.emission.wavelength / 4 / pi ./ imag( sqrt( alpha1.^2 - 2 * delta1 + 2i * beta1 ) );
-            %p0 = this.incidence.wavelength / 4 / pi ./ imag( sqrt( alpha.^2 - 2 * delta + 2i * beta ) );
-            %p1 = this.emission.wavelength / 4 / pi ./ imag( sqrt( alpha1.^2 - 2 * delta1 + 2i * beta1 ) );
             
             location = ~(p1 == Inf);
             
@@ -315,7 +313,7 @@ classdef XeSystem < handle
             location = (penetration == Inf);
             d = repmat(thick(2:end-1), m, 1);
             integralFactor = penetration(:, 1:end-1) .* ( 1 - exp(- d ./ penetration(:, 1:end-1)) );
-            integralFactor(location(:, 1:end-1)) = d(location(:, 1:end-1));
+            integralFactor(location(:, 1:end-1)) = d(location(:, 1:end-1))
             intensity(:, 1:end-1) = intensity(:, 1:end-1) .* integralFactor;
             
             larger = slits./sin(angles) > foots;
