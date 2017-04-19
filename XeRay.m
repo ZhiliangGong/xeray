@@ -621,6 +621,8 @@ classdef XeRay < handle
                             switchElementFitting('on');
                         case 'show-cal'
                             replot('lower');
+                        case 'show-error'
+                            replot('upper');
                         case 'layer-table'
                             replot('lower');
                         case 'basic-info'
@@ -1372,18 +1374,20 @@ classdef XeRay < handle
                     
                     hold(ax, 'off');
                     
+                    n_charts = length(this.gui.angleList.Value);
+                    charts = gobjects(1, n_charts);
+                    
                     switch withError
                         case false
-                            for i = 1 : length(this.gui.angleList.Value)
+                            for i = 1 : n_charts
                                 xdata = this.data{n(i)}.data.energy;
                                 ydata = this.data{n(i)}.data.(marker)(:, m(i));
-                                plot(ax, xdata, ydata, styles{i});
+                                charts(i) = plot(ax, xdata, ydata, styles{i});
                                 if i == 1
                                     hold(ax, 'on');
                                 end
                             end
                             
-                            legend(ax, legends);
                             title(ax, sprintf('%s %s', this.const.element, 'Spectra'));
                             xlabel(ax, 'Energy (keV)');
                             ylabel(ax, 'Signal');
@@ -1394,18 +1398,19 @@ classdef XeRay < handle
                                 plot(ax, xdata, ydata, styles{i}(2));
                             end
                             
+                            legend(charts, legends);
+                            
                         case true
                             for i = 1 : length(this.gui.angleList.Value)
                                 xdata = this.data{n(i)}.data.energy;
                                 ydata = this.data{n(i)}.data.(marker)(:, m(i));
                                 yerror = this.data{n(i)}.data.intensityError(:, m(i));
-                                errorbar(ax, xdata, ydata, yerror, styles{i});
+                                charts(i) = errorbar(ax, xdata, ydata, yerror, styles{i});
                                 if i == 1
                                     hold(ax, 'on');
                                 end
                             end
                             
-                            legend(ax, legends);
                             title(ax, sprintf('%s %s', this.const.element, 'Spectra'));
                             xlabel(ax, 'Energy (keV)');
                             ylabel(ax, 'Signal');
@@ -1415,6 +1420,7 @@ classdef XeRay < handle
                                 ydata = this.data{n(i)}.data.lineshape.(marker)(:, m(i));
                                 plot(ax, xdata, ydata, styles{i}(2));
                             end
+                            legend(charts, legends);
                             
                     end
                     
@@ -1682,6 +1688,8 @@ classdef XeRay < handle
                             this.view(state, trigger);
                         case 'show-cal'
                             this.view(state, trigger);
+                        case 'show-error'
+                            this.view(state, trigger);
                         case 'basic-info'
                             eventdata = varargin{1};
                             if editBasicInfo(eventdata)
@@ -1747,7 +1755,7 @@ classdef XeRay < handle
                         case 'confidence-input'
                             this.view(state, 'confidence-input');
                         otherwise
-                            disp(['Trigger: ', trigger, ' is not found for State: ', state]);
+                            disp(['Trigger: ', trigger, ' is not found for State: ', state, ' on the controller']);
                     end
                 case 'edit-element'
                     switch trigger

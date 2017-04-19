@@ -342,23 +342,32 @@ classdef XeLayers < handle
             
         end
 
-        function plotSignal(this, axis)
+        function plotSignal(this, ax, sel_angle)
 
-            if nargin == 1
-                axis = gca;
+            if isempty(ax)
+                figure;
+                ax = gca;
             end
-
-            errorbar(axis, this.data.angle, this.data.lineshape.signal, this.data.lineshape.signalError,'o','markersize',8,'linewidth',2);
-            hold(axis,'on');
             
-            fineAngle = this.data.fineAngleRange(100);
-            plot(axis, fineAngle, this.system.calculateSignalCurve(this.fit.all.P, fineAngle), 'r-', 'linewidth', 2);
-            hold(axis,'off');
+            if nargin == 2 || isempty(sel_angle)
+                sel_angle = 1 : length(this.data.angle);
+            end
             
-            xlabel(axis,'Qz');
-            ylabel(axis,'Integrated Signal (a.u.)');
-            legend(axis,'Data','Fit');
-            title(axis,sprintf('%s %s', this.data.element, 'Fluorescence'));
+            xdata = this.data.angle(sel_angle);
+            ydata = this.data.lineshape.signal(sel_angle);
+            yerror = this.data.lineshape.signalError(sel_angle);
+            errorbar(ax, xdata, ydata, yerror, 'o-', 'markersize', 8, 'linewidth', 2);
+            
+            if ~isempty(this.fit.all)
+                hold(ax, 'on');
+                fineAngle = this.data.fineAngleRange(100);
+                plot(ax, fineAngle, this.system.calculateSignalCurve(this.fit.all.P, fineAngle), 'r-', 'linewidth', 2);
+                hold(ax,'off');
+            end
+            
+            xlabel(ax, 'Angle (deg.)', 'fontsize', 16);
+            ylabel(ax, 'Integrated Signal (a.u.)', 'fontsize', 16);
+            set(ax, 'fontsize', 14);
 
         end
         
