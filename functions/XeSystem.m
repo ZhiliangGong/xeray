@@ -313,7 +313,7 @@ classdef XeSystem < handle
             location = (penetration == Inf);
             d = repmat(thick(2:end-1), m, 1);
             integralFactor = penetration(:, 1:end-1) .* ( 1 - exp(- d ./ penetration(:, 1:end-1)) );
-            integralFactor(location(:, 1:end-1)) = d(location(:, 1:end-1))
+            integralFactor(location(:, 1:end-1)) = d(location(:, 1:end-1));
             intensity(:, 1:end-1) = intensity(:, 1:end-1) .* integralFactor;
             
             larger = slits./sin(angles) > foots;
