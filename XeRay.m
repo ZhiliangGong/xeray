@@ -1287,7 +1287,7 @@ classdef XeRay < handle
                                             plotSignal();
                                             hold(ax, 'on');
                                             plotCalculation();
-                                            legends = [ax.Legend.String, {'Calculation'}];
+                                            legends = [ax.Legend.String(1), {'Calculation'}];
                                             legend(ax, legends);
                                             hold(ax, 'off');
                                         case 1
@@ -1295,7 +1295,7 @@ classdef XeRay < handle
                                             hold(ax, 'on');
                                             plotCalculation();
                                             plotFit();
-                                            legends = [ax.Legend.String, {'Calculation', 'Fit'}];
+                                            legends = [ax.Legend.String(1), {'Calculation', 'Fit'}];
                                             legend(ax, legends);
                                             hold(ax, 'off');
                                     end
