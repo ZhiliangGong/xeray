@@ -102,8 +102,6 @@ classdef FitOneResult < handle
                 this.adjWindow = this.adjWindow+repmat(this.value, 2, 1);
             end
             
-            
-            
         end
         
     end

@@ -750,6 +750,7 @@ classdef XeRay < handle
                 this.gui.startFitting.Enable = 'on';
                 
                 this.gui.fileList.Enable = antiStatus;
+                this.gui.angleList.Enable = antiStatus;
                 this.gui.elementPopup.Enable = antiStatus;
                 this.gui.lineShape.Enable = antiStatus;
                 this.gui.removeBackground.Enable = antiStatus;
@@ -1277,10 +1278,11 @@ classdef XeRay < handle
                                         case 0
                                             plotSignal();
                                         case 1
+                                            ax = this.gui.ax2;
                                             plotSignal();
                                             hold(ax, 'on');
                                             plotFit();
-                                            legends = [ax.Legend.String, {'Fit'}];
+                                            legends = [ax.Legend.String(1), {'Fit'}];
                                             legend(ax, legends);
                                             hold(ax, 'off');
                                     end

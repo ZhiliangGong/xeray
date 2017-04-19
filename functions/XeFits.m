@@ -41,7 +41,7 @@ classdef XeFits < handle
             n = length(this.lower);
             this.parameters = cell(1, n);
             this.parameters(1:3) = {'Angle-Offset', 'Scale-Factor', 'Background'};
-            this.parameters{end} = 'Conc-bottom';
+            this.parameters{end} = 'Conc-Bottom';
             
             for i = 1 : n-4
                 this.parameters{i+3} = strcat('Conc-', num2str(n - 3 - i));
