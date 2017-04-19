@@ -743,6 +743,7 @@ classdef XeRay < handle
                 end
                 
                 set(findall(this.gui.rightPanel, '-property', 'Enable'), 'Enable', status);
+                this.gui.showCal.Value = false;
                 this.gui.showCal.Enable = status;
                 this.gui.startFitting.Enable = 'on';
                 
