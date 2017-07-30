@@ -5,6 +5,7 @@ Matlab GUI for total reflection x-ray fluorescence measurements on layered surfa
 * For raw spectra, type XeRayGUI(), or x = XeRayGUI() to start.
   * You can also sepcify one or more files to load within the parameters of XeRayGUI, such as XeRayGUI(file), or XeRayGUI(fileCellArray).
 * For integrated spectra, type XeRayGUI2(), XeRayGUI2, or x = XeRayGUI2() to start.
+* Refer to this paper for details (http://aip.scitation.org/doi/abs/10.1063/1.4978654).
 
 ## Systems
 * Tested for air/liquid, and liquid/liquid surfaces
